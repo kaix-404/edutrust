@@ -1,37 +1,61 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
   View,
   Text,
   SafeAreaView,
-  ScrollView
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator
 } from 'react-native';
 
 import api from '../../services/api';
 
-type GraphData = {
-  user: string;
-  skills: string[];
+type CareerResponse = {
+  success: boolean;
+  path: string[];
 };
 
 export default function GraphScreen() {
-  const [graph, setGraph] =
-    useState<GraphData | null>(null);
+  const [startSkill, setStartSkill] =
+    useState('');
 
-  useEffect(() => {
-    fetchGraph();
-  }, []);
+  const [goalSkill, setGoalSkill] =
+    useState('');
 
-  const fetchGraph = async () => {
+  const [careerPath, setCareerPath] =
+    useState<string[]>([]);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const generateRoadmap = async () => {
+    if (!startSkill || !goalSkill) {
+      return;
+    }
+
     try {
-      const response = await api.get(
-        '/graph/Kai'
-      );
+      setLoading(true);
 
-      setGraph(response.data);
+      const response =
+        await api.get<CareerResponse>(
+          `/careers/${encodeURIComponent(
+            startSkill
+          )}/${encodeURIComponent(
+            goalSkill
+          )}`
+        );
+
+      setCareerPath(response.data.path);
 
     } catch (error) {
       console.log(error);
+
+      setCareerPath([]);
+
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,59 +63,132 @@ export default function GraphScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        padding: 20
+        backgroundColor: '#F5F7FB'
       }}
     >
-      <Text
-        style={{
-          fontSize: 30,
-          fontWeight: 'bold',
-          marginBottom: 20
+      <ScrollView
+        contentContainerStyle={{
+          padding: 20
         }}
       >
-        Skill Graph
-      </Text>
+        <Text
+          style={{
+            fontSize: 32,
+            fontWeight: 'bold',
+            marginBottom: 10
+          }}
+        >
+          Career Roadmap
+        </Text>
 
-      {graph && (
-        <ScrollView>
-          <View
+        <Text
+          style={{
+            fontSize: 16,
+            color: '#666',
+            marginBottom: 30
+          }}
+        >
+          Generate your personalized
+          learning path
+        </Text>
+
+        <TextInput
+          placeholder="Starting Skill"
+          value={startSkill}
+          onChangeText={setStartSkill}
+          style={{
+            backgroundColor: 'white',
+            padding: 18,
+            borderRadius: 16,
+            marginBottom: 16,
+            fontSize: 16
+          }}
+        />
+
+        <TextInput
+          placeholder="Goal Skill"
+          value={goalSkill}
+          onChangeText={setGoalSkill}
+          style={{
+            backgroundColor: 'white',
+            padding: 18,
+            borderRadius: 16,
+            marginBottom: 20,
+            fontSize: 16
+          }}
+        />
+
+        <TouchableOpacity
+          onPress={generateRoadmap}
+          style={{
+            backgroundColor: '#111827',
+            padding: 18,
+            borderRadius: 16,
+            alignItems: 'center',
+            marginBottom: 30
+          }}
+        >
+          <Text
             style={{
-              padding: 20,
-              borderWidth: 2,
-              borderRadius: 16,
-              marginBottom: 20
+              color: 'white',
+              fontSize: 18,
+              fontWeight: '600'
             }}
           >
-            <Text
+            Generate Roadmap
+          </Text>
+        </TouchableOpacity>
+
+        {loading && (
+          <ActivityIndicator
+            size="large"
+          />
+        )}
+
+        {careerPath.map((skill, index) => (
+          <View
+            key={index}
+            style={{
+              alignItems: 'center'
+            }}
+          >
+            <View
               style={{
-                fontSize: 24,
-                fontWeight: 'bold',
-                marginBottom: 20
+                width: '100%',
+                padding: 24,
+                backgroundColor: 'white',
+                borderRadius: 20,
+                marginBottom: 10,
+                shadowColor: '#000',
+                shadowOpacity: 0.08,
+                shadowRadius: 10,
+                elevation: 4
               }}
             >
-              {graph.user}
-            </Text>
-
-            {graph.skills.map((skill, index) => (
-              <View
-                key={index}
+              <Text
                 style={{
-                  marginLeft: 20,
-                  marginBottom: 15
+                  fontSize: 22,
+                  fontWeight: '600',
+                  textAlign: 'center'
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 18
-                  }}
-                >
-                  └── {skill}
-                </Text>
-              </View>
-            ))}
+                {skill}
+              </Text>
+            </View>
+
+            {index !== careerPath.length - 1 && (
+              <Text
+                style={{
+                  fontSize: 40,
+                  marginBottom: 10
+                }}
+              >
+                ↓
+              </Text>
+            )}
           </View>
-        </ScrollView>
-      )}
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 }

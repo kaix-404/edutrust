@@ -37,7 +37,8 @@ export default function WalletScreen() {
       style={{
         flex: 1,
         padding: 20,
-        justifyContent: 'center'
+        justifyContent: 'center',
+        backgroundColor: '#F5F7FB'
       }}
     >
       <Text

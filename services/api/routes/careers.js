@@ -5,6 +5,6 @@ const {
   getCareerPath
 } = require('../controllers/careersController');
 
-router.get('/:skill1/:skill2', getCareerPath);
+router.get('/:startSkill/:goalSkill', getCareerPath);
 
 module.exports = router;

@@ -29,6 +29,50 @@ const getSkills = async (req, res) => {
   }
 };
 
+
+const connectSkills = async (req, res) => {
+  const session = driver.session();
+
+  const {
+    parentSkill,
+    childSkill
+  } = req.body;
+
+  try {
+    await session.run(
+      `
+      MERGE (a:Skill {name:$parentSkill})
+      MERGE (b:Skill {name:$childSkill})
+
+      MERGE (a)-[:REQUIRES]->(b)
+
+      RETURN a, b
+      `,
+      {
+        parentSkill,
+        childSkill
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Skills connected'
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+
+  } finally {
+    await session.close();
+  }
+};
+
 module.exports = {
-  getSkills
+  getSkills,
+  connectSkills
 };

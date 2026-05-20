@@ -30,7 +30,8 @@ export default function HomeScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        padding: 20
+        padding: 20,
+        backgroundColor: '#F5F7FB'
       }}
     >
       <Text

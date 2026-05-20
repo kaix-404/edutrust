@@ -3,32 +3,60 @@ const driver = require('../db/neo4j');
 const getCareerPath = async (req, res) => {
   const session = driver.session();
 
-  const { skill1, skill2 } = req.params;
+  const { startSkill, goalSkill } = req.params;
 
   try {
     const result = await session.run(
       `
       MATCH p = shortestPath(
-        (a:Skill {name:$skill1})
-        -[:REQUIRES*]-
-        (b:Skill {name:$skill2})
+        (start:Skill {name:$startSkill})
+        -[:REQUIRES*]->
+        (goal:Skill {name:$goalSkill})
       )
 
       RETURN p
       `,
-      { skill1, skill2 }
+      {
+        startSkill,
+        goalSkill
+      }
     );
 
+    if (result.records.length === 0) {
+      return res.status(404).json({
+        error: 'No path found'
+      });
+    }
+
+    const path = result.records[0]
+      .get('p')
+      .segments;
+
+    const skills = [];
+
+    if (path.length > 0) {
+      skills.push(
+        path[0].start.properties.name
+      );
+
+      path.forEach(segment => {
+        skills.push(
+          segment.end.properties.name
+        );
+      });
+    }
+
     res.json({
-      message:'Career path calculated',
-      pathsFound: result.records.length
+      success: true,
+      path: skills
     });
 
   } catch (error) {
     console.log(error);
 
     res.status(500).json({
-      error:'Failed to calculate path'
+      success: false,
+      error: error.message
     });
 
   } finally {
