@@ -8,6 +8,7 @@ const usersRoutes = require('./routes/users');
 const endorsementsRoutes = require('./routes/endorsements');
 const careersRoutes = require('./routes/careers');
 const graphRoutes = require('./routes/graph');
+const recommendationRoutes = require('./routes/recommendation');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/users', usersRoutes);
 app.use('/endorsements', endorsementsRoutes);
 app.use('/careers', careersRoutes);
 app.use('/graph', graphRoutes);
+app.use('/recommendations', recommendationRoutes);
 
 app.get('/', (req, res) => {
   res.json({
