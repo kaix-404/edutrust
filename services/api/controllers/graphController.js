@@ -9,8 +9,9 @@ const getUserGraph = async (req, res) => {
     const result = await session.run(
       `
       MATCH (u:User {name:$userName})
-      -[:HAS_SKILL]->
-      (s:Skill)
+
+      OPTIONAL MATCH
+      (u)-[:HAS_SKILL]->(s:Skill)
 
       RETURN u.name AS user,
              collect(s.name) AS skills
@@ -26,9 +27,14 @@ const getUserGraph = async (req, res) => {
 
     const record = result.records[0];
 
+    const skills =
+      record
+        .get('skills')
+        .filter(skill => skill !== null);
+
     res.json({
       user: record.get('user'),
-      skills: record.get('skills')
+      skills
     });
 
   } catch (error) {
