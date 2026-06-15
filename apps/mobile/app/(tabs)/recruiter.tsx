@@ -19,6 +19,9 @@ export default function RecruiterScreen() {
   const [skills, setSkills] =
     useState<string[]>([]);
 
+  const [influence, setInfluence] = 
+    useState<number | null>(null);
+    
   const [endorsers, setEndorsers] =
     useState<string[]>([]);
 

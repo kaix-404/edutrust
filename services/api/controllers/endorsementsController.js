@@ -79,7 +79,107 @@ const getEndorsements = async (req, res) => {
   }
 }
 
+const getEndorsementNetwork = async (req, res) => {
+  const session = driver.session();
+
+  try {
+    // Get endorsement connections
+    const connectionResult = await session.run(`
+      MATCH (a:User)-[:ENDORSES]->(b:User)
+
+      RETURN
+        a.name AS source,
+        b.name AS target
+    `);
+
+    const connections =
+      connectionResult.records.map(record => ({
+        source: record.get('source'),
+        target: record.get('target')
+      }));
+
+    // Get all users + trust scores
+    const nodeResult = await session.run(`
+      MATCH (u:User)
+
+      OPTIONAL MATCH (endorser:User)-[:ENDORSES]->(u)
+
+      RETURN
+        u.name AS name,
+        count(endorser) * 10 AS trustScore
+    `);
+
+    const nodes =
+      nodeResult.records.map(record => ({
+        name: record.get('name'),
+        trustScore: Number(
+          record.get('trustScore')
+        )
+      }));
+
+    res.json({
+      nodes,
+      connections
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  } finally {
+    await session.close();
+  }
+};
+
+const getInfluenceRanking = async (req, res) => {
+  const session = driver.session();
+
+  try {
+    const result = await session.run(`
+      MATCH (u:User)
+
+      OPTIONAL MATCH (endorser:User)-[:ENDORSES]->(u)
+
+      OPTIONAL MATCH (grandEndorser:User)-[:ENDORSES]->(endorser)
+
+      RETURN
+        u.name AS user,
+        count(DISTINCT endorser)
+        +
+        count(DISTINCT grandEndorser) * 2
+        AS influenceScore
+
+      ORDER BY influenceScore DESC
+    `);
+
+    const rankings =
+      result.records.map(record => ({
+        user: record.get('user'),
+        influenceScore: Number(
+          record.get('influenceScore')
+        )
+      }));
+
+    res.json(rankings);
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  } finally {
+    await session.close();
+  }
+};
+
 module.exports = {
   endorseUser,
-  getEndorsements
+  getEndorsements,
+  getEndorsementNetwork,
+  getInfluenceRanking
 };
