@@ -143,10 +143,7 @@ const getSkillGap = async (req, res) => {
   }
 };
 
-const getRecommendations = async (
-  req,
-  res
-) => {
+const getRecommendations = async (req, res) => {
   const session = driver.session();
 
   const { role, user } = req.params;
@@ -212,9 +209,133 @@ const getRecommendations = async (
   }
 };
 
+const getRoadmapForRole = async (req, res) => {
+  const session = driver.session();
+
+  const { role, user } = req.params;
+
+  try {
+    const pathResult =
+      await session.run(
+        `
+        MATCH (r:Role {name:$role})
+        -[:REQUIRES]->
+        (target:Skill)
+
+        OPTIONAL MATCH path=
+        (target)-[:REQUIRES*0..]->(prereq)
+
+        RETURN path
+        `,
+        { role }
+      );
+
+    const roadmap = [];
+
+    pathResult.records.forEach(
+      record => {
+        const path =
+          record.get('path');
+
+        if (!path) return;
+
+        path.segments.forEach(
+          segment => {
+            roadmap.push(
+              segment.start.properties.name
+            );
+
+            roadmap.push(
+              segment.end.properties.name
+            );
+          }
+        );
+      }
+    );
+
+    const uniqueRoadmap =
+      [...new Set(roadmap)].reverse();
+
+    const userResult =
+      await session.run(
+        `
+        MATCH (u:User {name:$user})
+        -[:HAS_SKILL]->
+        (s:Skill)
+
+        RETURN collect(s.name)
+        AS userSkills
+        `,
+        { user }
+      );
+
+    const userSkills =
+      userResult.records[0]?.get(
+        'userSkills'
+      ) || [];
+
+    const remainingRoadmap =
+      uniqueRoadmap.filter(
+        skill =>
+          !userSkills.includes(skill)
+      );
+    
+    const roleSkills =
+      await session.run(
+        `
+        MATCH (r:Role {name:$role})
+        -[:REQUIRES]->
+        (s:Skill)
+
+        RETURN collect(s.name)
+        AS roleSkills
+        `,
+        { role }
+      );
+
+    const requiredSkills =
+      roleSkills.records[0]?.get(
+        'roleSkills'
+      ) || [];
+
+    const roleSatisfied =
+      requiredSkills.every(
+        skill => userSkills.includes(skill)
+      );
+
+    if (roleSatisfied) {
+      return res.json({
+        role,
+        user,
+        roadmap: [],
+        nextSkill: null,
+      });
+    }  
+
+    res.json({
+      role,
+      user,
+      roadmap: remainingRoadmap,
+      nextSkill:
+        remainingRoadmap[0] || null,
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: error.message,
+    });
+
+  } finally {
+    await session.close();
+  }
+};
+
 module.exports = {
   createRole,
   connectRoleSkill,
   getSkillGap,
-  getRecommendations
+  getRecommendations,
+  getRoadmapForRole
 };

@@ -24,6 +24,12 @@ export default function RoleAnalysisScreen() {
   const [recommendations, setRecommendations] =
     useState<string[]>([]); 
 
+  const [roadmap, setRoadmap] =
+  useState<string[]>([]);
+
+  const [nextSkill, setNextSkill] =
+    useState('');
+
   const analyzeCandidate = async () => {
     try {
       const response =
@@ -49,6 +55,23 @@ export default function RoleAnalysisScreen() {
       setRecommendations(
         recommendationResponse.data
           .recommendations || []
+      );
+
+      const roadmapResponse =
+        await api.get(
+          `/roles/roadmap/${encodeURIComponent(
+            roleName
+          )}/${encodeURIComponent(
+            userName
+          )}`
+        );
+
+      setRoadmap(
+        roadmapResponse.data.roadmap || []
+      );
+
+      setNextSkill(
+        roadmapResponse.data.nextSkill || ''
       );
 
     } catch (error) {
@@ -270,6 +293,58 @@ export default function RoleAnalysisScreen() {
                     </Text>
                   )
                 )}
+              </View>
+            )}
+            {roadmap.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: 'white',
+                  padding: 20,
+                  borderRadius: 16,
+                  marginTop: 20,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    marginBottom: 12,
+                  }}
+                >
+                  Learning Roadmap
+                </Text>
+
+                {roadmap.map(
+                  (skill, index) => (
+                    <Text key={skill}>
+                      {index + 1}. {skill}
+                    </Text>
+                  )
+                )}
+              </View>
+            )}
+            {nextSkill && (
+              <View
+                style={{
+                  backgroundColor: 'white',
+                  padding: 20,
+                  borderRadius: 16,
+                  marginTop: 20,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    marginBottom: 12,
+                  }}
+                >
+                  Recommended Next Skill
+                </Text>
+
+                <Text>
+                  🎯 {nextSkill}
+                </Text>
               </View>
             )}
           </>
