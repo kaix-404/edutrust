@@ -78,19 +78,34 @@ export default function EndorsementNetworkScreen() {
   }, [connections]);
 
   const screenWidth =
-    Dimensions.get('window').width;
+  Dimensions.get('window').width;
+
+  const nodeCount =
+    Math.max(users.length, 1);
+
+  const radius =
+    Math.max(
+      120,
+      nodeCount * 35
+    );
 
   const svgWidth =
     Math.max(
-      screenWidth,
-      500
+      screenWidth - 40,
+      radius * 2 + 250
     );
 
-  const svgHeight = 500;
+  const svgHeight =
+    Math.max(
+      500,
+      radius * 2 + 250
+    );
 
-  const centerX = svgWidth / 2;
-  const centerY = 220;
-  const radius = 150;
+  const centerX =
+    svgWidth / 2;
+
+  const centerY =
+    svgHeight / 2;
 
   const positions =
     users.reduce(
@@ -143,7 +158,7 @@ export default function EndorsementNetworkScreen() {
     >
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          padding: 12,
         }}
       >
         <Text
@@ -176,146 +191,159 @@ export default function EndorsementNetworkScreen() {
               backgroundColor:
                 'white',
               borderRadius: 20,
-              padding: 20,
+              padding: 8,
             }}
           >
-            <Svg
-              width={svgWidth}
-              height={svgHeight}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator
             >
-              {/* Connections */}
+              <Svg
+                width={svgWidth}
+                height={svgHeight}
+              >
 
-              {connections.map((connection, index) => {
-                const source =
-                  positions[connection.source];
+                {/* Connections */}
 
-                const target =
-                  positions[connection.target];
+                {connections.map((connection, index) => {
+                  const source =
+                    positions[connection.source];
 
-                const angle = Math.atan2(
-                  target.y - source.y,
-                  target.x - source.x
-                );
+                  const target =
+                    positions[connection.target];
 
-                const nodeRadius = 30;
+                  const angle = Math.atan2(
+                    target.y - source.y,
+                    target.x - source.x
+                  );
 
-                const endX =
-                  target.x -
-                  nodeRadius * Math.cos(angle);
+                  const nodeRadius = 30;
 
-                const endY =
-                  target.y -
-                  nodeRadius * Math.sin(angle);
+                  const endX =
+                    target.x -
+                    nodeRadius * Math.cos(angle);
 
-                const arrowLength = 12;
-                const arrowWidth = 6;
+                  const endY =
+                    target.y -
+                    nodeRadius * Math.sin(angle);
 
-                const arrowPoint1 = {
-                  x:
-                  endX -
-                  arrowLength * Math.cos(angle) +
-                  arrowWidth * Math.sin(angle),  
+                  const arrowLength = 12;
+                  const arrowWidth = 6;
 
-                  y:
-                  endY -
-                  arrowLength * Math.sin(angle) -
-                  arrowWidth * Math.cos(angle),
-                };
+                  const arrowPoint1 = {
+                    x:
+                    endX -
+                    arrowLength * Math.cos(angle) +
+                    arrowWidth * Math.sin(angle),  
 
-                const arrowPoint2 = {
-                  x:
-                  endX -
-                  arrowLength * Math.cos(angle) -
-                  arrowWidth * Math.sin(angle),  
+                    y:
+                    endY -
+                    arrowLength * Math.sin(angle) -
+                    arrowWidth * Math.cos(angle),
+                  };
 
-                  y:
-                  endY -
-                  arrowLength * Math.sin(angle) +
-                  arrowWidth * Math.cos(angle),
-                };
+                  const arrowPoint2 = {
+                    x:
+                    endX -
+                    arrowLength * Math.cos(angle) -
+                    arrowWidth * Math.sin(angle),  
 
-                return (
-                  <React.Fragment key={index}>
-                    <Line
-                      x1={source.x}
-                      y1={source.y}
-                      x2={endX}
-                      y2={endY}
-                      stroke="#6B7280"
-                      strokeWidth="2"
+                    y:
+                    endY -
+                    arrowLength * Math.sin(angle) +
+                    arrowWidth * Math.cos(angle),
+                  };
+
+                  return (
+                    <React.Fragment key={index}>
+                      <Line
+                        x1={source.x}
+                        y1={source.y}
+                        x2={endX}
+                        y2={endY}
+                        stroke="#6B7280"
+                        strokeWidth="2"
+                      />
+
+                      <Polygon
+                        points={`
+                          ${endX},${endY}
+                          ${arrowPoint1.x},${arrowPoint1.y}
+                          ${arrowPoint2.x},${arrowPoint2.y}
+                        `}
+                        fill="#6B7280"
+                      />
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* Nodes */}
+
+                {users.map(user => (
+                  <React.Fragment
+                    key={user}
+                  >
+                    <Circle
+                      cx={
+                        positions[
+                          user
+                        ].x
+                      }
+                      cy={
+                        positions[
+                          user
+                        ].y
+                      }
+                      r={
+                        Math.max(
+                          28,
+                          Math.min(
+                            30 +
+                            (trustMap[user] || 0) / 3,
+                            55
+                          )
+                        )
+                      }
+                      fill={
+                        (trustMap[user] || 0) >= 20
+                          ? '#16A34A'
+                          : '#2563EB'
+                      }
                     />
 
-                    <Polygon
-                      points={`
-                        ${endX},${endY}
-                        ${arrowPoint1.x},${arrowPoint1.y}
-                        ${arrowPoint2.x},${arrowPoint2.y}
-                      `}
-                      fill="#6B7280"
-                    />
+                    <SvgText
+                      x={
+                        positions[
+                          user
+                        ].x
+                      }
+                      y={
+                        positions[
+                          user
+                        ].y + 5
+                      }
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize={
+                        user.length > 10
+                          ? 10
+                          : 14
+                      }
+                    >
+                      {user}
+                    </SvgText>
+                    <SvgText
+                      x={positions[user].x}
+                      y={positions[user].y + 45}
+                      textAnchor="middle"
+                      fontSize="12"
+                    >
+                      Trust: {trustMap[user] || 0}
+                    </SvgText>
                   </React.Fragment>
-                );
-              })}
-
-              {/* Nodes */}
-
-              {users.map(user => (
-                <React.Fragment
-                  key={user}
-                >
-                  <Circle
-                    cx={
-                      positions[
-                        user
-                      ].x
-                    }
-                    cy={
-                      positions[
-                        user
-                      ].y
-                    }
-                    r={
-                      Math.min(
-                        25 +
-                        (trustMap[user] || 0) / 2,
-                        50
-                      )
-                    }
-                    fill={
-                      (trustMap[user] || 0) >= 20
-                        ? '#16A34A'
-                        : '#2563EB'
-                    }
-                  />
-
-                  <SvgText
-                    x={
-                      positions[
-                        user
-                      ].x
-                    }
-                    y={
-                      positions[
-                        user
-                      ].y + 5
-                    }
-                    textAnchor="middle"
-                    fill="white"
-                    fontSize="14"
-                  >
-                    {user}
-                  </SvgText>
-                  <SvgText
-                    x={positions[user].x}
-                    y={positions[user].y + 45}
-                    textAnchor="middle"
-                    fontSize="12"
-                  >
-                    Trust: {trustMap[user] || 0}
-                  </SvgText>
-                </React.Fragment>
-              ))}
-            </Svg>
+                ))}
+              </Svg>
+            </ScrollView>
 
             <View
               style={{

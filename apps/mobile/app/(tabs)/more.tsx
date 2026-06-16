@@ -36,11 +36,12 @@ export default function MoreScreen() {
           style={{
             backgroundColor: 'white',
             padding: 18,
+            borderWidth: 1,
             borderRadius: 12,
             marginBottom: 12,
           }}
         >
-          <Text>{label}</Text>
+          <Text style={{ fontSize: 15}}>{label}</Text>
         </TouchableOpacity>
       ))}
     </View>
