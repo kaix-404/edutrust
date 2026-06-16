@@ -332,10 +332,264 @@ const getRoadmapForRole = async (req, res) => {
   }
 };
 
+const getRoleRanking = async (req, res) => {
+  const session = driver.session();
+
+  const role = req.params.role;
+
+  try {
+    // Get role skills
+    const roleResult = await session.run(
+      `
+      MATCH (r:Role {name:$role})
+      -[:REQUIRES]->
+      (s:Skill)
+
+      RETURN collect(s.name)
+      AS roleSkills
+      `,
+      { role }
+    );
+
+    const roleSkills =
+      roleResult.records[0]?.get(
+        'roleSkills'
+      ) || [];
+
+    if (!roleSkills.length) {
+      return res.status(404).json({
+        error: 'Role not found'
+      });
+    }
+
+    // Get all users and their skills
+    const usersResult = await session.run(`
+      MATCH (u:User)
+
+      OPTIONAL MATCH
+      (u)-[:HAS_SKILL]->(s:Skill)
+
+      RETURN
+      u.name AS user,
+      collect(s.name) AS skills
+    `);
+
+    const rankings = [];
+
+    for (
+      const record
+      of usersResult.records
+    ) {
+      const user =
+        record.get('user');
+
+      const userSkills =
+        record.get('skills') || [];
+
+      const matchedSkills =
+        roleSkills.filter(
+          skill =>
+            userSkills.includes(
+              skill
+            )
+        );
+
+      const matchScore =
+        Math.round(
+          (matchedSkills.length /
+            roleSkills.length) *
+            100
+        );
+
+      const trustResult =
+        await session.run(
+          `
+          MATCH (endorser:User)
+          -[:ENDORSES]->
+          (u:User {name:$user})
+          
+          RETURN count(endorser)
+          AS endorsements
+          `,
+          { user }
+        );
+        
+      const endorsements =
+        trustResult.records[0]?.get(
+          'endorsements'
+        ) || 0;
+        
+      const trustScore =
+        Number(endorsements) * 10;
+        
+      const influenceResult =
+        await session.run(
+          `
+          MATCH (u:User {name:$user})
+          
+          OPTIONAL MATCH
+          (endorser:User)
+          -[:ENDORSES]->
+          (u)
+          
+          OPTIONAL MATCH
+          (grandEndorser:User)
+          -[:ENDORSES]->
+          (endorser)
+          
+          RETURN
+          count(DISTINCT endorser)
+          +
+          count(DISTINCT grandEndorser)*2
+          AS influence
+          `,
+          { user }
+        );
+        
+      const influenceScore =
+        Number(
+          influenceResult.records[0]?.get(
+            'influence'
+          ) || 0
+        );
+        
+      const finalScore =
+        matchScore * 0.7 +
+        trustScore * 0.2 +
+        influenceScore * 0.1;
+
+      rankings.push({
+        user,
+        matchScore,
+        trustScore,
+        influenceScore,
+        finalScore
+      });
+      }
+
+    rankings.sort(
+      (a, b) =>
+        b.finalScore -
+        a.finalScore
+    );
+
+    res.json(rankings);
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  } finally {
+    await session.close();
+  }
+};
+
+const recommendRoles = async (req, res) => {
+  const session = driver.session();
+
+  const user = req.params.user;
+
+  try {
+    // Get user skills
+    const userResult = await session.run(
+      `
+      MATCH (u:User {name:$user})
+      -[:HAS_SKILL]->
+      (s:Skill)
+
+      RETURN collect(s.name)
+      AS userSkills
+      `,
+      { user }
+    );
+
+    const userSkills =
+      userResult.records[0]?.get(
+        'userSkills'
+      ) || [];
+
+    if (!userSkills.length) {
+      return res.status(404).json({
+        error:
+          'User not found or has no skills'
+      });
+    }
+
+    // Get all roles
+    const roleResult = await session.run(`
+      MATCH (r:Role)
+      -[:REQUIRES]->
+      (s:Skill)
+
+      RETURN
+        r.name AS role,
+        collect(s.name)
+        AS roleSkills
+    `);
+
+    const recommendations =
+      roleResult.records.map(record => {
+        const role =
+          record.get('role');
+
+        const roleSkills =
+          record.get('roleSkills');
+
+        const matchedSkills =
+          roleSkills.filter(skill =>
+            userSkills.includes(skill)
+          );
+
+        const matchScore =
+          Math.round(
+            (matchedSkills.length /
+              roleSkills.length) *
+              100
+          );
+
+        return {
+          role,
+          matchScore,
+          matchedSkills,
+          missingSkills:
+            roleSkills.filter(
+              skill =>
+                !userSkills.includes(
+                  skill
+                )
+            ),
+        };
+      });
+
+    recommendations.sort(
+      (a, b) =>
+        b.matchScore -
+        a.matchScore
+    );
+
+    res.json(recommendations);
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      error: error.message,
+    });
+
+  } finally {
+    await session.close();
+  }
+};
+
 module.exports = {
   createRole,
   connectRoleSkill,
   getSkillGap,
   getRecommendations,
-  getRoadmapForRole
+  getRoadmapForRole,
+  getRoleRanking,
+  recommendRoles
 };

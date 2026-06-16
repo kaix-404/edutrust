@@ -117,6 +117,8 @@ export default function RoleAnalysisScreen() {
           placeholder="Role Name"
           value={roleName}
           onChangeText={setRoleName}
+          onSubmitEditing={analyzeCandidate}
+          returnKeyType="done"
           style={{
             backgroundColor: 'white',
             padding: 16,

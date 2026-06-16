@@ -7,7 +7,9 @@ const {
   connectRoleSkill,
   getSkillGap,
   getRecommendations,
-  getRoadmapForRole
+  getRoadmapForRole,
+  getRoleRanking,
+  recommendRoles
 } = require('../controllers/roleController');
 
 router.post('/', createRole);
@@ -15,5 +17,7 @@ router.post('/connect', connectRoleSkill);
 router.get('/gap/:role/:user', getSkillGap);
 router.get('/recommendations/:role/:user', getRecommendations);
 router.get('/roadmap/:role/:user', getRoadmapForRole);
+router.get('/rank/:role', getRoleRanking);
+router.get('/recommend/:user', recommendRoles);
 
 module.exports = router;
