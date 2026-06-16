@@ -53,6 +53,8 @@ export default function ProfileScreen() {
         placeholder="Enter username"
         value={name}
         onChangeText={setName}
+        onSubmitEditing={createUser}
+        returnKeyType="done"
         style={{
           borderWidth: 1,
           borderRadius: 10,

@@ -85,6 +85,8 @@ export default function GraphScreen() {
           placeholder="User Name"
           value={userName}
           onChangeText={setUserName}
+          onSubmitEditing={loadGraph}
+          returnKeyType="done"
           style={{
             backgroundColor: 'white',
             padding: 16,

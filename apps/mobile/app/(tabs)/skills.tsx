@@ -67,6 +67,8 @@ export default function WalletScreen() {
         placeholder="Skill"
         value={skill}
         onChangeText={setSkill}
+        onSubmitEditing={addSkill}
+        returnKeyType="done"
         style={{
           borderWidth: 1,
           borderRadius: 10,

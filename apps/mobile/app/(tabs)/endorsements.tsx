@@ -118,6 +118,8 @@ export default function EndorsementsScreen() {
           placeholder="To User"
           value={toUser}
           onChangeText={setToUser}
+          onSubmitEditing={endorseUser}
+          returnKeyType="done"
           style={{
             backgroundColor: 'white',
             padding: 16,
@@ -173,6 +175,8 @@ export default function EndorsementsScreen() {
           placeholder="User Name"
           value={searchUser}
           onChangeText={setSearchUser}
+          onSubmitEditing={fetchTrustData}
+          returnKeyType="done"
           style={{
             backgroundColor: 'white',
             padding: 16,

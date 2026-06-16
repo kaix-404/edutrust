@@ -126,6 +126,8 @@ export default function RecruiterScreen() {
           placeholder="Candidate Name"
           value={userName}
           onChangeText={setUserName}
+          onSubmitEditing={loadCandidate}
+          returnKeyType="done"
           style={{
             backgroundColor: 'white',
             padding: 16,
