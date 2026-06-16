@@ -512,9 +512,11 @@ const recommendRoles = async (req, res) => {
       ) || [];
 
     if (!userSkills.length) {
-      return res.status(404).json({
-        error:
-          'User not found or has no skills'
+      return res.json({
+        user,
+        recommendations: [],
+        message:
+          'No skills found for this user'
       });
     }
 
