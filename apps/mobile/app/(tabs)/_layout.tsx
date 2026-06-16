@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Drawer } from 'expo-router/drawer';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -31,34 +32,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="skills"
-        options={{
-          title: 'Skills',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="creditcard.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="role"
-        options={{
-          title: 'Role',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="briefcase.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="graph"
-        options={{
-          title: 'Graph',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="endorsements"
-        options={{
-          title: 'Endorsements',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="hand.thumbsup.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="network"
         options={{
           title: 'Network',
@@ -73,10 +46,52 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              size={28}
+              name="line.3.horizontal"
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="skills"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="role"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="graph"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="ranking"
         options={{
-          title: 'Ranking',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="rosette" color={color} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="recommend"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="endorsements"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

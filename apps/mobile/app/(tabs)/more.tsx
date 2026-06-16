@@ -1,0 +1,48 @@
+import { View, Text, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+
+export default function MoreScreen() {
+  return (
+    <View
+      style={{
+        flex: 1,
+        padding: 20,
+        backgroundColor: '#F5F7FB',
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 28,
+          fontWeight: 'bold',
+          marginBottom: 20,
+        }}
+      >
+        More
+      </Text>
+
+      {[
+        ['Skills', '/skills'],
+        ['Roles', '/role'],
+        ['Recommendations', '/recommend'],
+        ['Graph Explorer', '/graph'],
+        ['Endorsements', '/endorsements'],
+        ['Ranking', '/ranking'],
+      ].map(([label, route]) => (
+        <TouchableOpacity
+          key={route}
+          onPress={() =>
+            router.push(route as any)
+          }
+          style={{
+            backgroundColor: 'white',
+            padding: 18,
+            borderRadius: 12,
+            marginBottom: 12,
+          }}
+        >
+          <Text>{label}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
