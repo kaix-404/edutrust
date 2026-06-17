@@ -32,6 +32,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="skillview"
+        options={{
+          title: 'Skills',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="creditcard.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="network"
         options={{
           title: 'Network',

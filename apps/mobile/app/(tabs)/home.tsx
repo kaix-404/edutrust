@@ -9,17 +9,22 @@ import {
 import api from '../../services/api';
 
 export default function HomeScreen() {
-  const [skills, setSkills] = useState<{ name: string }[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
 
   useEffect(() => {
-    fetchSkills();
+    loadAnalytics();
   }, []);
 
-  const fetchSkills = async () => {
+  const loadAnalytics = async () => {
     try {
-      const response = await api.get('/skills');
+      const response =
+        await api.get(
+          '/analytics'
+        );
 
-      setSkills(response.data);
+      setAnalytics(
+        response.data
+      );
 
     } catch (error) {
       console.log(error);
@@ -41,27 +46,65 @@ export default function HomeScreen() {
           marginBottom: 20
         }}
       >
-        EduTrust Skills
+        EduTrust 
       </Text>
 
-      <FlatList
-        data={skills}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent:
+            'space-between',
+        }}
+      >
+        {[
+          {
+            label: 'Users',
+            value:
+              analytics?.totalUsers,
+          },
+          {
+            label: 'Skills',
+            value:
+              analytics?.totalSkills,
+          },
+          {
+            label: 'Roles',
+            value:
+              analytics?.totalRoles,
+          },
+          {
+            label: 'Endorsements',
+            value:
+              analytics?.totalEndorsements,
+          },
+        ].map(card => (
           <View
+            key={card.label}
             style={{
-              padding: 15,
-              borderWidth: 1,
-              borderRadius: 10,
-              marginBottom: 10
+              width: '48%',
+              backgroundColor:
+                'white',
+              padding: 20,
+              borderRadius: 16,
+              marginBottom: 12,
             }}
           >
-            <Text style={{ fontSize: 18 }}>
-              {item.name}
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: 'bold',
+              }}
+            >
+              {card.value ?? 0}
+            </Text>
+
+            <Text>
+              {card.label}
             </Text>
           </View>
-        )}
-      />
+        ))}
+      </View>
     </SafeAreaView>
   );
 }
