@@ -22,7 +22,8 @@ export default function MoreScreen() {
 
       {[
         ['Roles', '/role'],
-        ['Recommendations', '/recommend'],
+        ['Role Recommendations', '/rolerecommend'],
+        ['Skills Recommendations', '/skillrecommend'],
         ['Graph Explorer', '/graph'],
         ['Endorsements', '/endorsements'],
         ['Ranking', '/ranking'],
