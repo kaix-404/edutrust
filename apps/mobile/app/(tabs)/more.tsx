@@ -21,7 +21,7 @@ export default function MoreScreen() {
       </Text>
 
       {[
-        ['Roles', '/role'],
+        ['Role Analysis', '/role'],
         ['Role Recommendations', '/rolerecommend'],
         ['Skills Recommendations', '/skillrecommend'],
         ['Graph Explorer', '/graph'],
