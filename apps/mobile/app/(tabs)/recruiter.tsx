@@ -34,6 +34,17 @@ export default function RecruiterScreen() {
   const [searched, setSearched] =
     useState(false);
 
+  const [compareName, setCompareName] =
+    useState('');
+
+  const [comparison, setComparison] =
+    useState<any>(null);
+
+  const [mode, setMode] =
+    useState<'analysis' | 'comparison' | null>(
+      null
+    );
+
   const loadCandidate = async () => {
     if (!userName.trim()) {
       return;
@@ -42,6 +53,8 @@ export default function RecruiterScreen() {
     setCandidateName(userName.trim());
 
     try {
+      setMode('analysis');
+      setComparison(null);
       setLoading(true);
       setSearched(true);
 
@@ -82,6 +95,42 @@ export default function RecruiterScreen() {
     }
   };
 
+  const compareCandidates = async () => {
+      if (
+        !userName.trim() ||
+        !compareName.trim()
+      ) {
+        return;
+      }
+
+      try {
+        setMode('comparison');
+
+        const response =
+          await api.get(
+            `/compare/${encodeURIComponent(
+              userName
+            )}/${encodeURIComponent(
+              compareName
+            )}`
+          );
+
+        if (userName.trim() === compareName.trim()) {
+          alert(
+            'Please enter two different candidate names for comparison.'
+          );
+          return;
+        }
+
+        setComparison(
+          response.data
+        );
+
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
   const getProfileStrength = (
     score: number
   ) => {
@@ -98,6 +147,15 @@ export default function RecruiterScreen() {
     }
 
     return 'Beginner';
+  };
+
+  const winner = (
+    a: number,
+    b: number
+  ) => {
+    if (a > b) return 1;
+    if (b > a) return 2;
+    return 0;
   };
 
   return (
@@ -156,6 +214,39 @@ export default function RecruiterScreen() {
           </Text>
         </TouchableOpacity>
 
+        <TextInput
+          placeholder="Compare With"
+          value={compareName}
+          onChangeText={setCompareName}
+          onSubmitEditing={compareCandidates}
+          returnKeyType="done"
+          style={{
+            backgroundColor: 'white',
+            padding: 16,
+            borderRadius: 12,
+            marginBottom: 12,
+          }}
+        />
+        <TouchableOpacity
+          onPress={compareCandidates}
+          style={{
+            backgroundColor: '#2563EB',
+            padding: 16,
+            borderRadius: 12,
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <Text
+            style={{
+              color: 'white',
+              fontWeight: '600',
+            }}
+          >
+            Compare Candidates
+          </Text>
+        </TouchableOpacity>
+
         {loading && (
           <ActivityIndicator
             size="large"
@@ -163,6 +254,7 @@ export default function RecruiterScreen() {
         )}
 
         {!loading &&
+          mode === 'analysis' &&
           searched &&
           trustScore !== null && (
             <>
@@ -348,6 +440,170 @@ export default function RecruiterScreen() {
               </View>
             </>
           )}
+
+        {mode === 'comparison' && 
+        comparison && (
+          <View
+            style={{
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 16,
+              marginTop: 20,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: 'bold',
+                marginBottom: 16,
+              }}
+            >
+              🏆 Candidate Comparison
+            </Text>
+
+            <Text
+              style={{
+                marginBottom: 10,
+              }}
+            >
+              {comparison.candidate1.name}
+              {' vs '}
+              {comparison.candidate2.name}
+            </Text>
+
+            {/* Trust */}
+
+            <Text
+              style={{
+                fontWeight: 'bold',
+              }}
+            >
+              Trust Score
+            </Text>
+
+            <Text>
+              {comparison.candidate1.trustScore}
+              {winner(
+                comparison.candidate1.trustScore,
+                comparison.candidate2.trustScore
+              ) === 1
+                ? ' 🏆'
+                : ''}
+            </Text>
+
+            <Text
+              style={{
+                marginBottom: 12,
+              }}
+            >
+              {comparison.candidate2.trustScore}
+              {winner(
+                comparison.candidate1.trustScore,
+                comparison.candidate2.trustScore
+              ) === 2
+                ? ' 🏆'
+                : ''}
+            </Text>
+
+            {/* Influence */}
+
+            <Text
+              style={{
+                fontWeight: 'bold',
+              }}
+            >
+              Influence Score
+            </Text>
+
+            <Text>
+              {comparison.candidate1.influenceScore}
+              {winner(
+                comparison.candidate1.influenceScore,
+                comparison.candidate2.influenceScore
+              ) === 1
+                ? ' 🏆'
+                : ''}
+            </Text>
+
+            <Text
+              style={{
+                marginBottom: 12,
+              }}
+            >
+              {comparison.candidate2.influenceScore}
+              {winner(
+                comparison.candidate1.influenceScore,
+                comparison.candidate2.influenceScore
+              ) === 2
+                ? ' 🏆'
+                : ''}
+            </Text>
+
+            {/* Skills */}
+
+            <Text
+              style={{
+                fontWeight: 'bold',
+              }}
+            >
+              Skill Count
+            </Text>
+
+            <Text>
+              {comparison.candidate1.skillCount}
+              {winner(
+                comparison.candidate1.skillCount,
+                comparison.candidate2.skillCount
+              ) === 1
+                ? ' 🏆'
+                : ''}
+            </Text>
+
+            <Text
+              style={{
+                marginBottom: 12,
+              }}
+            >
+              {comparison.candidate2.skillCount}
+              {winner(
+                comparison.candidate1.skillCount,
+                comparison.candidate2.skillCount
+              ) === 2
+                ? ' 🏆'
+                : ''}
+            </Text>
+
+            {/* Endorsements */}
+
+            <Text
+              style={{
+                fontWeight: 'bold',
+              }}
+            >
+              Endorsements
+            </Text>
+
+            <Text>
+              {comparison.candidate1.endorsements}
+              {winner(
+                comparison.candidate1.endorsements,
+                comparison.candidate2.endorsements
+              ) === 1
+                ? ' 🏆'
+                : ''}
+            </Text>
+
+            <Text>
+              {comparison.candidate2.endorsements}
+              {winner(
+                comparison.candidate1.endorsements,
+                comparison.candidate2.endorsements
+              ) === 2
+                ? ' 🏆'
+                : ''}
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

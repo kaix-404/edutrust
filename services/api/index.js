@@ -11,6 +11,7 @@ const graphRoutes = require('./routes/graph');
 const recommendationRoutes = require('./routes/recommendation');
 const roleRoutes = require('./routes/role');
 const analyticsRoutes = require('./routes/analytics');
+const comparisonRoutes = require('./routes/comparison');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/graph', graphRoutes);
 app.use('/recommendations', recommendationRoutes);
 app.use('/roles', roleRoutes);
 app.use('/analytics', analyticsRoutes);
+app.use('/compare', comparisonRoutes);
 
 app.get('/', (req, res) => {
   res.json({

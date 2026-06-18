@@ -143,14 +143,17 @@ const getInfluenceRanking = async (req, res) => {
 
       OPTIONAL MATCH (endorser:User)-[:ENDORSES]->(u)
 
-      OPTIONAL MATCH (grandEndorser:User)-[:ENDORSES]->(endorser)
+      WITH
+      u,
+      sum(
+        size(
+          [(:User)-[:ENDORSES]->(endorser) | 1]
+        ) * 10
+      ) AS influenceScore
 
       RETURN
-        u.name AS user,
-        count(DISTINCT endorser)
-        +
-        count(DISTINCT grandEndorser) * 2
-        AS influenceScore
+      u.name AS user,
+      coalesce(influenceScore,0) AS influenceScore
 
       ORDER BY influenceScore DESC
     `);
@@ -160,7 +163,7 @@ const getInfluenceRanking = async (req, res) => {
         user: record.get('user'),
         influenceScore: Number(
           record.get('influenceScore')
-        )
+        ),
       }));
 
     res.json(rankings);
@@ -169,7 +172,7 @@ const getInfluenceRanking = async (req, res) => {
     console.log(error);
 
     res.status(500).json({
-      error: error.message
+      error: error.message,
     });
 
   } finally {
