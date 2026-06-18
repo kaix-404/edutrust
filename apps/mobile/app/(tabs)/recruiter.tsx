@@ -180,72 +180,92 @@ export default function RecruiterScreen() {
           Recruiter Dashboard
         </Text>
 
-        <TextInput
-          placeholder="Candidate Name"
-          value={userName}
-          onChangeText={setUserName}
-          onSubmitEditing={loadCandidate}
-          returnKeyType="done"
+        <View
           style={{
-            backgroundColor: 'white',
-            padding: 16,
-            borderRadius: 12,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
             marginBottom: 12,
           }}
-        />
+        >
+          <TextInput
+            placeholder="Candidate Name"
+            value={userName}
+            onChangeText={setUserName}
+            onSubmitEditing={loadCandidate}
+            returnKeyType="done"
+            style={{
+              flex: 1,
+              backgroundColor: 'white',
+              padding: 16,
+              borderRadius: 12,
+              marginRight: 8,
+            }}
+          />
+          <TextInput
+            placeholder="Compare With"
+            value={compareName}
+            onChangeText={setCompareName}
+            onSubmitEditing={compareCandidates}
+            returnKeyType="done"
+            style={{
+              flex: 1,
+              backgroundColor: 'white',
+              padding: 16,
+              borderRadius: 12,
+              marginLeft: 8,
+            }}
+          />
+        </View>
 
-        <TouchableOpacity
-          onPress={loadCandidate}
+        <View
           style={{
-            backgroundColor: '#111827',
-            padding: 16,
-            borderRadius: 12,
-            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
             marginBottom: 24,
           }}
         >
-          <Text
+          <TouchableOpacity
+            onPress={loadCandidate}
             style={{
-              color: 'white',
-              fontWeight: '600',
+              flex: 1,
+              backgroundColor: '#111827',
+              padding: 16,
+              borderRadius: 12,
+              alignItems: 'center',
+              marginRight: 8,
             }}
           >
-            Analyze Candidate
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={{
+                color: 'white',
+                fontWeight: '600',
+              }}
+            >
+              Analyze Candidate
+            </Text>
+          </TouchableOpacity>
 
-        <TextInput
-          placeholder="Compare With"
-          value={compareName}
-          onChangeText={setCompareName}
-          onSubmitEditing={compareCandidates}
-          returnKeyType="done"
-          style={{
-            backgroundColor: 'white',
-            padding: 16,
-            borderRadius: 12,
-            marginBottom: 12,
-          }}
-        />
-        <TouchableOpacity
-          onPress={compareCandidates}
-          style={{
-            backgroundColor: '#2563EB',
-            padding: 16,
-            borderRadius: 12,
-            alignItems: 'center',
-            marginBottom: 24,
-          }}
-        >
-          <Text
+          <TouchableOpacity
+            onPress={compareCandidates}
             style={{
-              color: 'white',
-              fontWeight: '600',
+              flex: 1,
+              backgroundColor: '#2563EB',
+              padding: 16,
+              borderRadius: 12,
+              alignItems: 'center',
+              marginLeft: 8,
             }}
           >
-            Compare Candidates
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={{
+                color: 'white',
+                fontWeight: '600',
+              }}
+            >
+              Compare Candidates
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {loading && (
           <ActivityIndicator
