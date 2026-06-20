@@ -1,6 +1,7 @@
 const express = require('express');
-
 const router = express.Router();
+
+const verifyToken = require('../middleware/auth');
 
 const {
   createRole,
@@ -12,8 +13,9 @@ const {
   recommendRoles
 } = require('../controllers/roleController');
 
-router.post('/', createRole);
-router.post('/connect', connectRoleSkill);
+router.post('/', verifyToken, createRole);
+router.post('/connect', verifyToken, connectRoleSkill);
+
 router.get('/gap/:role/:user', getSkillGap);
 router.get('/recommendations/:role/:user', getRecommendations);
 router.get('/roadmap/:role/:user', getRoadmapForRole);

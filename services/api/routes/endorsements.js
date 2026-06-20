@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+const verifyToken = require('../middleware/auth');
+
 const {
   endorseUser,
   getEndorsements,
@@ -8,7 +10,8 @@ const {
   getInfluenceRanking
 } = require('../controllers/endorsementsController');
 
-router.post('/', endorseUser);
+router.post('/', verifyToken, endorseUser);
+
 router.get('/network', getEndorsementNetwork);
 router.get('/influence', getInfluenceRanking);
 router.get('/:user', getEndorsements);
