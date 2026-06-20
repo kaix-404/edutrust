@@ -1,87 +1,302 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  Alert
+  ScrollView,
+  Alert,
 } from 'react-native';
+
+import { router } from 'expo-router';
 
 import api from '../../services/api';
 
+import {
+  useAuth,
+} from '../../context/AuthContext';
+
 export default function ProfileScreen() {
-  const [name, setName] = useState('');
+  const {
+    user,
+    logout,
+  } = useAuth();
 
-  const createUser = async () => {
-    try {
-      await api.post('/users', {
-        name
-      });
+  const [skills, setSkills] =
+    useState<string[]>([]);
 
-      Alert.alert('Success', 'User created');
+  const [trustScore, setTrustScore] =
+    useState(0);
 
-      setName('');
+  const [endorsements, setEndorsements] =
+    useState(0);
 
-    } catch (error) {
-      console.log(error);
+  const [influenceScore, setInfluenceScore] =
+    useState(0);
 
-      Alert.alert('Error', 'Failed to create user');
+  useEffect(() => {
+    if (user?.name) {
+      loadProfileStats();
     }
-  };
+  }, [user]);
+
+  const loadProfileStats =
+    async () => {
+      try {
+        const skillsResponse =
+          await api.get(
+            `/users/${encodeURIComponent(
+              user.name
+            )}/skills`
+          );
+
+        setSkills(
+          skillsResponse.data.skills || []
+        );
+
+        const endorsementResponse =
+          await api.get(
+            `/endorsements/${encodeURIComponent(
+              user.name
+            )}`
+          );
+
+        setTrustScore(
+          endorsementResponse.data.trustScore || 0
+        );
+
+        setEndorsements(
+          endorsementResponse.data.endorsements || 0
+        );
+
+        const influenceResponse =
+          await api.get(
+            '/endorsements/influence'
+          );
+
+        const currentUser =
+          influenceResponse.data.find(
+            (item: any) =>
+              item.user === user.name
+          );
+
+        setInfluenceScore(
+          currentUser?.influenceScore || 0
+        );
+
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+  const handleLogout =
+    async () => {
+      await logout();
+
+      router.replace('/login');
+    };
 
   return (
-    <View
-      style={{
-        flex: 1,
+    <ScrollView
+      contentContainerStyle={{
         padding: 20,
-        justifyContent: 'center',
-        backgroundColor: '#F5F7FB'
+        backgroundColor: '#F5F7FB',
+        flexGrow: 1,
       }}
     >
       <Text
         style={{
-          fontSize: 28,
+          fontSize: 30,
           fontWeight: 'bold',
-          marginBottom: 20
+          marginBottom: 20,
         }}
       >
-        Create Profile
+        My Profile
       </Text>
 
-      <TextInput
-        placeholder="Enter username"
-        value={name}
-        onChangeText={setName}
-        onSubmitEditing={createUser}
-        returnKeyType="done"
+      <View
         style={{
-          borderWidth: 1,
-          borderRadius: 10,
-          padding: 15,
-          marginBottom: 20
+          backgroundColor: 'white',
+          padding: 24,
+          borderRadius: 16,
+          marginBottom: 20,
         }}
-      />
+      >
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: 'bold',
+          }}
+        >
+          {user?.name}
+        </Text>
+
+        <Text
+          style={{
+            color: '#666',
+            marginTop: 4,
+          }}
+        >
+          {user?.email}
+        </Text>
+      </View>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 12,
+          marginBottom: 20,
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'white',
+            padding: 20,
+            borderRadius: 16,
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: 'bold',
+            }}
+          >
+            {skills.length}
+          </Text>
+
+          <Text>Skills</Text>
+        </View>
+
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'white',
+            padding: 20,
+            borderRadius: 16,
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: 'bold',
+            }}
+          >
+            {trustScore}
+          </Text>
+
+          <Text>Trust</Text>
+        </View>
+      </View>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 12,
+          marginBottom: 20,
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'white',
+            padding: 20,
+            borderRadius: 16,
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: 'bold',
+            }}
+          >
+            {endorsements}
+          </Text>
+
+          <Text>Endorsements</Text>
+        </View>
+
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'white',
+            padding: 20,
+            borderRadius: 16,
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: 'bold',
+            }}
+          >
+            {influenceScore}
+          </Text>
+
+          <Text>Influence</Text>
+        </View>
+      </View>
+
+      <View
+        style={{
+          backgroundColor: 'white',
+          padding: 20,
+          borderRadius: 16,
+          marginBottom: 20,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: 'bold',
+            marginBottom: 10,
+          }}
+        >
+          Skills
+        </Text>
+
+        {skills.length > 0 ? (
+          skills.map(
+            (skill, index) => (
+              <Text
+                key={index}
+                style={{
+                  marginBottom: 8,
+                }}
+              >
+                ✓ {skill}
+              </Text>
+            )
+          )
+        ) : (
+          <Text>
+            No skills added yet.
+          </Text>
+        )}
+      </View>
 
       <TouchableOpacity
-        onPress={createUser}
+        onPress={handleLogout}
         style={{
-          backgroundColor: 'black',
-          padding: 15,
-          borderRadius: 10
+          backgroundColor: '#DC2626',
+          padding: 16,
+          borderRadius: 12,
+          alignItems: 'center',
         }}
       >
         <Text
           style={{
             color: 'white',
-            textAlign: 'center',
-            fontSize: 18
+            fontWeight: '600',
           }}
         >
-          Create User
+          Logout
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
-
 }

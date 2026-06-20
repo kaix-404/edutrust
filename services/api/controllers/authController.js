@@ -11,20 +11,47 @@ const register = async (req, res) => {
     password,
   } = req.body;
 
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      error: 'All fields are required',
+    });
+  }
+
   try {
     const existing =
       await session.run(
         `
-        MATCH (u:User {email:$email})
-        RETURN u
+        MATCH (u:User)
+
+        WHERE
+          u.email = $email OR
+          u.name = $name
+  
+        RETURN
+          u.email AS email,
+          u.name AS name
         `,
-        { email }
+        {
+          email,
+          name,
+        }
       );
 
     if (existing.records.length > 0) {
-      return res.status(400).json({
-        error: 'Email already exists',
-      });
+      const record =
+        existing.records[0];
+
+      if (record.get('email') === email) {
+        return res.status(400).json({
+          error: 'Email already exists',
+        });
+      }
+
+      if (record.get('name') === name) {
+        return res.status(400).json({
+          error: 'Username already exists',
+        });
+      }
     }
 
     const hashedPassword =
@@ -70,6 +97,12 @@ const login = async (req, res) => {
     email,
     password,
   } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      error: 'Email and password are required',
+    });
+  }
 
   try {
     const result =
