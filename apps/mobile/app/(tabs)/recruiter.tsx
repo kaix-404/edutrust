@@ -8,84 +8,183 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  StyleSheet,
+  Platform,
 } from 'react-native';
 
 import api from '../../services/api';
 
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+// Warm off-white canvas, single ink colour, one restrained accent.
+// No colour-coded metric buckets — let whitespace and type do the work.
+
+const T = {
+  canvas:     '#F7F5F2',   // warm off-white
+  paper:      '#FFFFFF',   // card surface
+  ink:        '#1A1714',   // near-black text
+  inkSub:     '#6B6560',   // secondary text
+  inkGhost:   '#B0AAA4',   // placeholder / muted
+  rule:       '#E8E4DF',   // hairline divider
+  accent:     '#2D5BE3',   // single accent – calm indigo
+  accentDim:  '#2D5BE308', // tinted surface
+  winner:     '#B07D2E',   // warm gold — winner only
+  winnerDim:  '#B07D2E0C',
+};
+
+const R = 14; // base border-radius
+
+// ─── Micro-components ─────────────────────────────────────────────────────────
+
+function Label({ children }: { children: string }) {
+  return <Text style={s.label}>{children}</Text>;
+}
+
+function Divider() {
+  return <View style={s.divider} />;
+}
+
+function MetricRow({
+  title,
+  value,
+  sub,
+}: {
+  title: string;
+  value: string | number;
+  sub?: string;
+}) {
+  return (
+    <View style={s.metricRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={s.metricTitle}>{title}</Text>
+        {sub ? <Text style={s.metricSub}>{sub}</Text> : null}
+      </View>
+      <Text style={s.metricValue}>{value}</Text>
+    </View>
+  );
+}
+
+function SkillTag({ name }: { name: string }) {
+  return (
+    <View style={s.skillTag}>
+      <Text style={s.skillTagText}>{name}</Text>
+    </View>
+  );
+}
+
+function EndorserItem({ name, index }: { name: string; index: number }) {
+  return (
+    <View style={s.endorserItem}>
+      <View style={s.endorserAvatar}>
+        <Text style={s.endorserInitial}>{name.charAt(0).toUpperCase()}</Text>
+      </View>
+      <Text style={s.endorserName}>{name}</Text>
+      {index === 0 && <Text style={s.endorserBadge}>Lead endorser</Text>}
+    </View>
+  );
+}
+
+// Comparison: single metric row showing both sides
+function CompareMetric({
+  label,
+  c1name,
+  c1val,
+  c2name,
+  c2val,
+}: {
+  label: string;
+  c1name: string;
+  c1val: number;
+  c2name: string;
+  c2val: number;
+}) {
+  const max      = Math.max(c1val, c2val, 1);
+  const c1wins   = c1val > c2val;
+  const c2wins   = c2val > c1val;
+  const tied     = c1val === c2val;
+
+  return (
+    <View style={s.cmpMetric}>
+      <Text style={s.cmpMetricLabel}>{label}</Text>
+
+      {/* Candidate 1 bar */}
+      <View style={s.cmpBarRow}>
+        <Text style={[s.cmpName, c1wins && s.cmpNameWinner]}>{c1name}</Text>
+        <View style={s.cmpBarTrack}>
+          <View
+            style={[
+              s.cmpBarFill,
+              {
+                width: `${(c1val / max) * 100}%`,
+                backgroundColor: c1wins ? T.winner : T.accent,
+                opacity: c1wins ? 1 : 0.45,
+              },
+            ]}
+          />
+        </View>
+        <Text style={[s.cmpScore, c1wins && s.cmpScoreWinner]}>{c1val}</Text>
+      </View>
+
+      {/* Candidate 2 bar */}
+      <View style={s.cmpBarRow}>
+        <Text style={[s.cmpName, c2wins && s.cmpNameWinner]}>{c2name}</Text>
+        <View style={s.cmpBarTrack}>
+          <View
+            style={[
+              s.cmpBarFill,
+              {
+                width: `${(c2val / max) * 100}%`,
+                backgroundColor: c2wins ? T.winner : T.accent,
+                opacity: c2wins ? 1 : 0.45,
+              },
+            ]}
+          />
+        </View>
+        <Text style={[s.cmpScore, c2wins && s.cmpScoreWinner]}>{c2val}</Text>
+      </View>
+    </View>
+  );
+}
+
+function ProfileLevel({ score }: { score: number }) {
+  const label =
+    score >= 50 ? 'Expert'      :
+    score >= 20 ? 'Strong'      :
+    score >  0  ? 'Developing'  : 'New';
+  return <Text style={s.levelBadge}>{label}</Text>;
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function RecruiterScreen() {
-  const [userName, setUserName] = useState('');
+  const [userName,      setUserName]      = useState('');
+  const [compareName,   setCompareName]   = useState('');
   const [candidateName, setCandidateName] = useState('');
 
-  const [skills, setSkills] =
-    useState<string[]>([]);
+  const [skills,     setSkills]     = useState<string[]>([]);
+  const [endorsers,  setEndorsers]  = useState<string[]>([]);
+  const [trustScore, setTrustScore] = useState<number | null>(null);
 
-  const [influence, setInfluence] = 
-    useState<number | null>(null);
-    
-  const [endorsers, setEndorsers] =
-    useState<string[]>([]);
-
-  const [trustScore, setTrustScore] =
-    useState<number | null>(null);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [searched, setSearched] =
-    useState(false);
-
-  const [compareName, setCompareName] =
-    useState('');
-
-  const [comparison, setComparison] =
-    useState<any>(null);
-
-  const [mode, setMode] =
-    useState<'analysis' | 'comparison' | null>(
-      null
-    );
+  const [comparison, setComparison] = useState<any>(null);
+  const [loading,    setLoading]    = useState(false);
+  const [mode,       setMode]       = useState<'analysis' | 'comparison' | null>(null);
+  const [searched,   setSearched]   = useState(false);
 
   const loadCandidate = async () => {
-    if (!userName.trim()) {
-      return;
-    }
-
+    if (!userName.trim()) return;
     setCandidateName(userName.trim());
-
+    setMode('analysis');
+    setComparison(null);
+    setLoading(true);
+    setSearched(true);
     try {
-      setMode('analysis');
-      setComparison(null);
-      setLoading(true);
-      setSearched(true);
-
-      const graphResponse =
-        await api.get(
-          `/graph/${encodeURIComponent(
-            userName
-          )}`
-        );
-
-      setSkills(
-        graphResponse.data.skills || []
-      );
-
-      const endorsementResponse =
-        await api.get(
-          `/endorsements/${encodeURIComponent(
-            userName
-          )}`
-        );
-
-      setEndorsers(
-        endorsementResponse.data.endorsedBy || []
-      );
-
-      setTrustScore(
-        endorsementResponse.data.trustScore || 0
-      );
-    } catch (error) {
-      console.log(error);
-
+      const [graphRes, endorseRes] = await Promise.all([
+        api.get(`/graph/${encodeURIComponent(userName)}`),
+        api.get(`/endorsements/${encodeURIComponent(userName)}`),
+      ]);
+      setSkills(graphRes.data.skills || []);
+      setEndorsers(endorseRes.data.endorsedBy || []);
+      setTrustScore(endorseRes.data.trustScore ?? 0);
+    } catch {
       setSkills([]);
       setEndorsers([]);
       setTrustScore(0);
@@ -96,535 +195,558 @@ export default function RecruiterScreen() {
   };
 
   const compareCandidates = async () => {
-      if (
-        !userName.trim() ||
-        !compareName.trim()
-      ) {
-        return;
-      }
-
-      try {
-        setMode('comparison');
-
-        const response =
-          await api.get(
-            `/compare/${encodeURIComponent(
-              userName
-            )}/${encodeURIComponent(
-              compareName
-            )}`
-          );
-
-        if (userName.trim() === compareName.trim()) {
-          alert(
-            'Please enter two different candidate names for comparison.'
-          );
-          return;
-        }
-
-        setComparison(
-          response.data
-        );
-
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-  const getProfileStrength = (
-    score: number
-  ) => {
-    if (score >= 50) {
-      return 'Expert';
+    if (!userName.trim() || !compareName.trim()) return;
+    if (userName.trim() === compareName.trim()) {
+      alert('Please enter two different candidate names.');
+      return;
     }
-
-    if (score >= 20) {
-      return 'Strong';
+    setMode('comparison');
+    setLoading(true);
+    try {
+      const res = await api.get(
+        `/compare/${encodeURIComponent(userName)}/${encodeURIComponent(compareName)}`
+      );
+      setComparison(res.data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
     }
-
-    if (score > 0) {
-      return 'Developing';
-    }
-
-    return 'Beginner';
   };
 
-  const winner = (
-    a: number,
-    b: number
-  ) => {
-    if (a > b) return 1;
-    if (b > a) return 2;
-    return 0;
+  const clearAll = () => {
+    setMode(null);
+    setSearched(false);
+    setComparison(null);
+    setSkills([]);
+    setEndorsers([]);
+    setTrustScore(null);
+    setUserName('');
+    setCompareName('');
   };
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
+
+  const overallWinner = (() => {
+    if (!comparison) return null;
+    const c1 = comparison.candidate1;
+    const c2 = comparison.candidate2;
+    const s1 = c1.trustScore + c1.influenceScore + c1.skillCount + c1.endorsements;
+    const s2 = c2.trustScore + c2.influenceScore + c2.skillCount + c2.endorsements;
+    if (s1 === s2) return null;
+    return s1 > s2 ? c1.name : c2.name;
+  })();
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: '#F5F7FB',
-      }}
-    >
+    <SafeAreaView style={s.safe}>
       <ScrollView
-        contentContainerStyle={{
-          padding: 20,
-        }}
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text
-          style={{
-            fontSize: 30,
-            fontWeight: 'bold',
-            marginBottom: 20,
-          }}
-        >
-          Recruiter Dashboard
-        </Text>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: 12,
-          }}
-        >
+        {/* ── Page header ────────────────────────────────────────────────── */}
+        <View style={s.pageHeader}>
+          <View>
+            <Text style={s.pageEyebrow}>Recruiter</Text>
+            <Text style={s.pageTitle}>Candidate Review</Text>
+          </View>
+          {(mode || searched) && (
+            <TouchableOpacity onPress={clearAll} activeOpacity={0.6}>
+              <Text style={s.resetLink}>Reset</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* ── Search card ────────────────────────────────────────────────── */}
+        <View style={s.card}>
+          <Label>Candidate name</Label>
           <TextInput
-            placeholder="Candidate Name"
+            placeholder="e.g. Jordan Lee"
+            placeholderTextColor={T.inkGhost}
             value={userName}
             onChangeText={setUserName}
             onSubmitEditing={loadCandidate}
-            returnKeyType="done"
-            style={{
-              flex: 1,
-              backgroundColor: 'white',
-              padding: 16,
-              borderRadius: 12,
-              marginRight: 8,
-            }}
+            returnKeyType="search"
+            style={s.input}
           />
+
+          <View style={s.inputSpacing} />
+
+          <Label>Compare with (optional)</Label>
           <TextInput
-            placeholder="Compare With"
+            placeholder="e.g. Alex Kim"
+            placeholderTextColor={T.inkGhost}
             value={compareName}
             onChangeText={setCompareName}
             onSubmitEditing={compareCandidates}
-            returnKeyType="done"
-            style={{
-              flex: 1,
-              backgroundColor: 'white',
-              padding: 16,
-              borderRadius: 12,
-              marginLeft: 8,
-            }}
+            returnKeyType="search"
+            style={s.input}
           />
+
+          <View style={s.btnRow}>
+            <TouchableOpacity
+              onPress={loadCandidate}
+              activeOpacity={0.85}
+              style={[s.btn, s.btnPrimary]}
+            >
+              <Text style={s.btnPrimaryText}>Analyze</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={compareCandidates}
+              activeOpacity={0.85}
+              style={[s.btn, s.btnGhost]}
+            >
+              <Text style={s.btnGhostText}>Compare</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: 24,
-          }}
-        >
-          <TouchableOpacity
-            onPress={loadCandidate}
-            style={{
-              flex: 1,
-              backgroundColor: '#111827',
-              padding: 16,
-              borderRadius: 12,
-              alignItems: 'center',
-              marginRight: 8,
-            }}
-          >
-            <Text
-              style={{
-                color: 'white',
-                fontWeight: '600',
-              }}
-            >
-              Analyze Candidate
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={compareCandidates}
-            style={{
-              flex: 1,
-              backgroundColor: '#2563EB',
-              padding: 16,
-              borderRadius: 12,
-              alignItems: 'center',
-              marginLeft: 8,
-            }}
-          >
-            <Text
-              style={{
-                color: 'white',
-                fontWeight: '600',
-              }}
-            >
-              Compare Candidates
-            </Text>
-          </TouchableOpacity>
-        </View>
-
+        {/* ── Loading ────────────────────────────────────────────────────── */}
         {loading && (
-          <ActivityIndicator
-            size="large"
-          />
+          <View style={s.loadingBlock}>
+            <ActivityIndicator color={T.accent} />
+            <Text style={s.loadingText}>Fetching profile…</Text>
+          </View>
         )}
 
-        {!loading &&
-          mode === 'analysis' &&
-          searched &&
-          trustScore !== null && (
-            <>
-              {/* Candidate Card */}
-
-              <View
-                style={{
-                  backgroundColor: 'white',
-                  padding: 24,
-                  borderRadius: 18,
-                  marginBottom: 20,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 26,
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {candidateName}
-                </Text>
-
-                <Text
-                  style={{
-                    marginTop: 6,
-                    color: '#666',
-                    fontSize: 16,
-                  }}
-                >
-                  {getProfileStrength(
-                    trustScore
-                  )}{' '}
-                  Candidate
-                </Text>
-              </View>
-
-              {/* Stats */}
-
-              <View
-                style={{
-                  flexDirection: 'row',
-                  gap: 12,
-                  marginBottom: 20,
-                }}
-              >
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: 'white',
-                    padding: 20,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 30,
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {trustScore}
-                  </Text>
-
-                  <Text>
-                    Trust Score
+        {/* ── Analysis ───────────────────────────────────────────────────── */}
+        {!loading && mode === 'analysis' && searched && trustScore !== null && (
+          <>
+            {/* Identity block */}
+            <View style={s.card}>
+              <View style={s.identityRow}>
+                <View style={s.avatar}>
+                  <Text style={s.avatarInitial}>
+                    {candidateName.charAt(0).toUpperCase()}
                   </Text>
                 </View>
-
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: 'white',
-                    padding: 20,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 30,
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {skills.length}
-                  </Text>
-
-                  <Text>
-                    Skills
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.candidateName}>{candidateName}</Text>
+                  <ProfileLevel score={trustScore} />
                 </View>
               </View>
 
-              {/* Skills */}
+              <Divider />
 
-              <View
-                style={{
-                  backgroundColor: 'white',
-                  padding: 20,
-                  borderRadius: 16,
-                  marginBottom: 20,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 'bold',
-                    marginBottom: 12,
-                  }}
-                >
-                  Verified Skills
-                </Text>
-
-                {skills.length > 0 ? (
-                  skills.map(
-                    (skill, index) => (
-                      <Text
-                        key={index}
-                        style={{
-                          fontSize: 16,
-                          marginBottom: 8,
-                        }}
-                      >
-                        ✓ {skill}
-                      </Text>
-                    )
-                  )
-                ) : (
-                  <Text
-                    style={{
-                      color: '#888',
-                    }}
-                  >
-                    No verified skills found.
-                  </Text>
-                )}
-              </View>
-
-              {/* Endorsements */}
-
-              <View
-                style={{
-                  backgroundColor: 'white',
-                  padding: 20,
-                  borderRadius: 16,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 'bold',
-                    marginBottom: 12,
-                  }}
-                >
-                  Endorsements
-                </Text>
-
-                {endorsers.length > 0 ? (
-                  endorsers.map(
-                    (
-                      endorser,
-                      index
-                    ) => (
-                      <Text
-                        key={index}
-                        style={{
-                          fontSize: 16,
-                          marginBottom: 8,
-                        }}
-                      >
-                        👤 {endorser}
-                      </Text>
-                    )
-                  )
-                ) : (
-                  <Text
-                    style={{
-                      color: '#888',
-                    }}
-                  >
-                    No endorsements yet.
-                  </Text>
-                )}
-              </View>
-            </>
-          )}
-
-        {mode === 'comparison' && 
-        comparison && (
-          <View
-            style={{
-              backgroundColor: 'white',
-              padding: 20,
-              borderRadius: 16,
-              marginTop: 20,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: 'bold',
-                marginBottom: 16,
-              }}
-            >
-              🏆 Candidate Comparison
-            </Text>
-
-            <Text
-              style={{
-                marginBottom: 10,
-              }}
-            >
-              {comparison.candidate1.name}
-              {' vs '}
-              {comparison.candidate2.name}
-            </Text>
-
-            {/* Trust */}
-
-            <Text
-              style={{
-                fontWeight: 'bold',
-              }}
-            >
-              Trust Score
-            </Text>
-
-            <Text>
-              {comparison.candidate1.trustScore}
-              {winner(
-                comparison.candidate1.trustScore,
-                comparison.candidate2.trustScore
-              ) === 1
-                ? ' 🏆'
-                : ''}
-            </Text>
-
-            <Text
-              style={{
-                marginBottom: 12,
-              }}
-            >
-              {comparison.candidate2.trustScore}
-              {winner(
-                comparison.candidate1.trustScore,
-                comparison.candidate2.trustScore
-              ) === 2
-                ? ' 🏆'
-                : ''}
-            </Text>
-
-            {/* Influence */}
-
-            <Text
-              style={{
-                fontWeight: 'bold',
-              }}
-            >
-              Influence Score
-            </Text>
-
-            <Text>
-              {comparison.candidate1.influenceScore}
-              {winner(
-                comparison.candidate1.influenceScore,
-                comparison.candidate2.influenceScore
-              ) === 1
-                ? ' 🏆'
-                : ''}
-            </Text>
-
-            <Text
-              style={{
-                marginBottom: 12,
-              }}
-            >
-              {comparison.candidate2.influenceScore}
-              {winner(
-                comparison.candidate1.influenceScore,
-                comparison.candidate2.influenceScore
-              ) === 2
-                ? ' 🏆'
-                : ''}
-            </Text>
+              <MetricRow title="Trust score"   value={trustScore}      />
+              <MetricRow title="Verified skills" value={skills.length} />
+              <MetricRow title="Endorsements"  value={endorsers.length} />
+            </View>
 
             {/* Skills */}
-
-            <Text
-              style={{
-                fontWeight: 'bold',
-              }}
-            >
-              Skill Count
-            </Text>
-
-            <Text>
-              {comparison.candidate1.skillCount}
-              {winner(
-                comparison.candidate1.skillCount,
-                comparison.candidate2.skillCount
-              ) === 1
-                ? ' 🏆'
-                : ''}
-            </Text>
-
-            <Text
-              style={{
-                marginBottom: 12,
-              }}
-            >
-              {comparison.candidate2.skillCount}
-              {winner(
-                comparison.candidate1.skillCount,
-                comparison.candidate2.skillCount
-              ) === 2
-                ? ' 🏆'
-                : ''}
-            </Text>
+            {skills.length > 0 && (
+              <View style={s.card}>
+                <Text style={s.sectionTitle}>Verified skills</Text>
+                <View style={s.pillsRow}>
+                  {skills.map((skill, i) => (
+                    <SkillTag key={i} name={skill} />
+                  ))}
+                </View>
+              </View>
+            )}
 
             {/* Endorsements */}
+            <View style={s.card}>
+              <Text style={s.sectionTitle}>Endorsed by</Text>
+              {endorsers.length > 0 ? (
+                endorsers.map((name, i) => (
+                  <EndorserItem key={i} name={name} index={i} />
+                ))
+              ) : (
+                <Text style={s.emptyLine}>No endorsements on record.</Text>
+              )}
+            </View>
+          </>
+        )}
 
-            <Text
-              style={{
-                fontWeight: 'bold',
-              }}
-            >
-              Endorsements
-            </Text>
+        {/* ── Comparison ─────────────────────────────────────────────────── */}
+        {!loading && mode === 'comparison' && comparison && (
+          <>
+            {/* Header */}
+            <View style={s.card}>
+              <Text style={s.sectionTitle}>Comparison</Text>
+              <Text style={s.cmpNames}>
+                {comparison.candidate1.name}
+                {'  ·  '}
+                {comparison.candidate2.name}
+              </Text>
 
-            <Text>
-              {comparison.candidate1.endorsements}
-              {winner(
-                comparison.candidate1.endorsements,
-                comparison.candidate2.endorsements
-              ) === 1
-                ? ' 🏆'
-                : ''}
-            </Text>
+              <Divider />
 
-            <Text>
-              {comparison.candidate2.endorsements}
-              {winner(
-                comparison.candidate1.endorsements,
-                comparison.candidate2.endorsements
-              ) === 2
-                ? ' 🏆'
-                : ''}
+              <CompareMetric
+                label="Trust score"
+                c1name={comparison.candidate1.name}
+                c1val={comparison.candidate1.trustScore}
+                c2name={comparison.candidate2.name}
+                c2val={comparison.candidate2.trustScore}
+              />
+              <CompareMetric
+                label="Influence score"
+                c1name={comparison.candidate1.name}
+                c1val={comparison.candidate1.influenceScore}
+                c2name={comparison.candidate2.name}
+                c2val={comparison.candidate2.influenceScore}
+              />
+              <CompareMetric
+                label="Skill count"
+                c1name={comparison.candidate1.name}
+                c1val={comparison.candidate1.skillCount}
+                c2name={comparison.candidate2.name}
+                c2val={comparison.candidate2.skillCount}
+              />
+              <CompareMetric
+                label="Endorsements"
+                c1name={comparison.candidate1.name}
+                c1val={comparison.candidate1.endorsements}
+                c2name={comparison.candidate2.name}
+                c2val={comparison.candidate2.endorsements}
+              />
+            </View>
+
+            {/* Recommendation */}
+            {overallWinner ? (
+              <View style={s.recommendCard}>
+                <Text style={s.recommendEyebrow}>Overall recommendation</Text>
+                <Text style={s.recommendName}>{overallWinner}</Text>
+                <Text style={s.recommendSub}>
+                  Leads across the combined scoring metrics.
+                </Text>
+              </View>
+            ) : (
+              <View style={s.recommendCard}>
+                <Text style={s.recommendEyebrow}>Overall recommendation</Text>
+                <Text style={s.recommendName}>Tied</Text>
+                <Text style={s.recommendSub}>
+                  Candidates are evenly matched across all metrics.
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+
+        {/* ── Empty state ────────────────────────────────────────────────── */}
+        {!loading && !mode && !searched && (
+          <View style={s.emptyState}>
+            <Text style={s.emptyTitle}>Search a candidate above</Text>
+            <Text style={s.emptySub}>
+              Enter a name to review a full profile, or fill both fields to compare two candidates side by side.
             </Text>
           </View>
         )}
+
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+
+  safe:   { flex: 1, backgroundColor: T.canvas },
+  scroll: { padding: 24, paddingBottom: 60 },
+
+  // Page header
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: 28,
+  },
+  pageEyebrow: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: T.inkGhost,
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: T.ink,
+    letterSpacing: -0.6,
+  },
+  resetLink: {
+    fontSize: 14,
+    color: T.accent,
+    fontWeight: '500',
+    paddingVertical: 4,
+  },
+
+  // Cards
+  card: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    padding: 22,
+    marginBottom: 16,
+  },
+
+  // Labels
+  label: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: T.inkSub,
+    letterSpacing: 0.4,
+    marginBottom: 8,
+  },
+
+  // Inputs
+  input: {
+    fontSize: 16,
+    color: T.ink,
+    borderBottomWidth: 1,
+    borderBottomColor: T.rule,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 7,
+    marginBottom: 4,
+  },
+  inputSpacing: { height: 20 },
+
+  // Buttons
+  btnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 24,
+  },
+  btn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: R,
+    alignItems: 'center',
+  },
+  btnPrimary: { backgroundColor: T.accent },
+  btnPrimaryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  btnGhost: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: T.rule,
+  },
+  btnGhostText: { color: T.inkSub, fontWeight: '500', fontSize: 15 },
+
+  // Loading
+  loadingBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 32,
+    justifyContent: 'center',
+  },
+  loadingText: { color: T.inkSub, fontSize: 14 },
+
+  // Divider
+  divider: {
+    height: 1,
+    backgroundColor: T.rule,
+    marginVertical: 18,
+  },
+
+  // Identity block
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 20,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: T.accentDim,
+    borderWidth: 1,
+    borderColor: T.accent + '22',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: T.accent,
+  },
+  candidateName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: T.ink,
+    marginBottom: 4,
+  },
+  levelBadge: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: T.inkSub,
+    letterSpacing: 0.3,
+  },
+
+  // Metric rows
+  metricRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: T.rule,
+  },
+  metricTitle: { fontSize: 15, color: T.ink, fontWeight: '400' },
+  metricSub:   { fontSize: 12, color: T.inkGhost, marginTop: 2 },
+  metricValue: { fontSize: 18, fontWeight: '600', color: T.ink },
+
+  // Section title
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.inkSub,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  },
+
+  // Skill pills
+  pillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  skillTag: {
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 100,
+    backgroundColor: T.canvas,
+    borderWidth: 1,
+    borderColor: T.rule,
+  },
+  skillTagText: {
+    fontSize: 13,
+    color: T.inkSub,
+    fontWeight: '500',
+  },
+
+  // Endorsers
+  endorserItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: T.rule,
+    gap: 13,
+  },
+  endorserAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: T.canvas,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endorserInitial: { fontSize: 14, fontWeight: '600', color: T.inkSub },
+  endorserName:    { flex: 1, fontSize: 15, color: T.ink, fontWeight: '400' },
+  endorserBadge:   {
+    fontSize: 11,
+    color: T.inkGhost,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+  },
+
+  emptyLine: { fontSize: 14, color: T.inkGhost, paddingVertical: 6 },
+
+  // Comparison
+  cmpNames: {
+    fontSize: 15,
+    color: T.inkSub,
+    marginBottom: 18,
+    marginTop: 4,
+  },
+  cmpMetric: { marginBottom: 22 },
+  cmpMetricLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: T.inkGhost,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  cmpBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  cmpName: {
+    width: 72,
+    fontSize: 13,
+    color: T.inkSub,
+    fontWeight: '400',
+  },
+  cmpNameWinner: {
+    color: T.winner,
+    fontWeight: '600',
+  },
+  cmpBarTrack: {
+    flex: 1,
+    height: 5,
+    backgroundColor: T.rule,
+    borderRadius: 100,
+    overflow: 'hidden',
+  },
+  cmpBarFill: {
+    height: 5,
+    borderRadius: 100,
+  },
+  cmpScore: {
+    width: 28,
+    textAlign: 'right',
+    fontSize: 14,
+    fontWeight: '600',
+    color: T.inkSub,
+  },
+  cmpScoreWinner: { color: T.winner },
+
+  // Recommendation
+  recommendCard: {
+    backgroundColor: T.winnerDim,
+    borderWidth: 1,
+    borderColor: T.winner + '28',
+    borderRadius: R + 4,
+    padding: 22,
+    marginBottom: 16,
+  },
+  recommendEyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: T.winner,
+    marginBottom: 8,
+  },
+  recommendName: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: T.ink,
+    letterSpacing: -0.4,
+    marginBottom: 6,
+  },
+  recommendSub: {
+    fontSize: 13,
+    color: T.inkSub,
+    lineHeight: 20,
+  },
+
+  // Empty state
+  emptyState: {
+    paddingTop: 56,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: T.inkSub,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptySub: {
+    fontSize: 14,
+    color: T.inkGhost,
+    textAlign: 'center',
+    lineHeight: 22,
+    maxWidth: 300,
+  },
+});
