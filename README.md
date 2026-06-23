@@ -1,111 +1,58 @@
-# EduTrust
+# EduTrust AI
 
-## Overview
+EduTrust AI is a graph-powered career intelligence platform built using **Neo4j**, **Node.js**, **Express**, **React Native (Expo)**, and **JWT Authentication**.
 
-EduTrust is a graph-powered skill intelligence platform built using **Neo4j**, **Node.js**, **Express.js**, **React Native (Expo)**, and **TypeScript**. The platform helps learners, professionals, and recruiters analyze skills, endorsements, trust, career readiness, and personalized learning paths through graph relationships.
-
-Instead of storing data in traditional relational tables, EduTrust models users, skills, roles, and endorsements as interconnected nodes, enabling powerful graph-based analytics and recommendations.
+The platform helps students, professionals, recruiters, and organizations understand skills, trust, endorsements, role fit, and career progression using connected graph data.
 
 ---
 
 ## Features
 
-### User & Skill Management
+### Authentication
 
-* Create users and skills
-* Assign skills to users
-* Store relationships using Neo4j graph structures
+* User Registration
+* User Login
+* JWT-based Authentication
+* Protected API Routes
+* Persistent Login using AsyncStorage
 
-### Skill Dependency Graph
+### Skill Graph Management
 
-* Define prerequisite relationships between skills
-* Example:
+* Create Users
+* Create Skills
+* Connect Users with Skills
+* Visualize User Skill Networks
 
-  * Machine Learning → Python
-  * Python → Data Structures
-  * Data Structures → Problem Solving
+### Career Intelligence
 
-### Career Role Management
+* Role Recommendation Engine
+* Skill Gap Analysis
+* Personalized Learning Roadmaps
+* Career Path Discovery
+* Skill Recommendations
 
-* Create job roles and required skills
-* Associate multiple skills with a role
-* Example:
+### Trust & Endorsements
 
-  * Backend Developer → Node.js, Express.js, MongoDB
-  * ML Engineer → Python, Machine Learning
-
-### Skill Gap Analysis
-
-* Compare a user's skills against a target role
-* Calculate:
-
-  * Match Score
-  * Matched Skills
-  * Missing Skills
-
-### Personalized Learning Roadmap
-
-* Generate prerequisite-based learning paths
-* Recommend the next skill to learn
-* Uses graph traversal to determine dependency chains
-
-### Endorsement System
-
-* Users can endorse other users
-* Prevents self-endorsement
-* Prevents duplicate endorsements using Neo4j relationship merging
-
-### Trust Score Engine
-
-* Calculates trust scores based on endorsements
-* Provides a simple reputation metric for users
+* Endorse Users
+* Trust Score Calculation
+* Endorsement Network Visualization
+* Influence Score Ranking
+* Community-Based Credibility Metrics
 
 ### Recruiter Dashboard
 
-Recruiters can:
+* Candidate Skill Analysis
+* Trust & Endorsement Evaluation
+* Influence Measurement
+* Candidate Comparison
+* Recruiter-Friendly Profile Insights
 
-* Search candidates
-* View skills
-* View endorsements
-* View trust scores
-* Assess profile strength
+### Analytics
 
-### Graph Explorer
-
-Interactive visualization of:
-
-* Users
-* Skills
-* Skill relationships
-
-### Endorsement Network Visualization
-
-Visual graph showing:
-
-* Who endorsed whom
-* Directional endorsement relationships
-* Network statistics
-
-### Influence Ranking
-
-Graph-based reputation analytics inspired by network ranking concepts.
-
-* Identifies influential users within the endorsement network
-* Ranks users based on endorsement relationships
-
----
-
-## Graph Model
-
-```text
-(User)-[:HAS_SKILL]->(Skill)
-
-(Skill)-[:REQUIRES]->(Skill)
-
-(Role)-[:REQUIRES]->(Skill)
-
-(User)-[:ENDORSES]->(User)
-```
+* Platform Statistics
+* User Rankings
+* Role Rankings
+* Network Insights
 
 ---
 
@@ -116,55 +63,104 @@ Graph-based reputation analytics inspired by network ranking concepts.
 * React Native
 * Expo Router
 * TypeScript
-* React Native SVG
 * Axios
+* AsyncStorage
+* React Native SVG
 
 ### Backend
 
 * Node.js
 * Express.js
-* Neo4j Driver
-
-### Database
-
-* Neo4j AuraDB
-
-### Query Language
-
-* Cypher
+* Neo4j Graph Database
+* JWT Authentication
+* bcrypt.js
 
 ---
 
-## Key Learning Outcomes
+## Graph Model
 
-This project demonstrates:
+### Nodes
 
-* Graph database design
-* Neo4j relationship modeling
-* Cypher query development
-* Graph traversal algorithms
-* Recommendation systems
-* Skill dependency analysis
-* Reputation and trust modeling
-* Full-stack application development
-* Mobile application development using React Native
+* User
+* Skill
+* Role
+
+### Relationships
+
+* HAS_SKILL
+* RELATED_TO
+* REQUIRES
+* ENDORSES
+
+---
+
+## Trust Algorithm
+
+Trust Score is calculated using endorsements:
+
+Trust Score = Number of Endorsements × 10
+
+Influence Score is calculated using the trust scores of endorsers:
+
+Influence Score = Sum of Endorser Trust Scores
+
+This enables trust propagation through the professional network.
+
+---
+
+## Recruiter Metrics
+
+Each candidate profile includes:
+
+* Verified Skills
+* Skill Count
+* Endorsement Count
+* Trust Score
+* Influence Score
+
+These metrics help recruiters evaluate both technical capability and community credibility.
 
 ---
 
 ## Future Enhancements
 
-* Neo4j Graph Data Science (PageRank)
-* AI-powered skill recommendations
-* Recruiter candidate ranking
-* Trust-weighted endorsements
-* Learning progress tracking
-* Real-time graph updates
-* Advanced network analytics
+* AI-Powered Career Counsellor
+* Resume Parsing
+* Job Matching Engine
+* Learning Resource Recommendations
+* Graph-Based Fraud Detection
+* Real-Time Notifications
+* Organization Dashboards
 
 ---
 
-## Author
+## Running the Project
 
-**Kai**
+### Backend
 
-A graph-native learning, trust, and career intelligence platform built with Neo4j, React Native, and Node.js.
+```bash
+npm install
+npm run dev
+```
+
+### Frontend
+
+```bash
+npm install
+npx expo start
+```
+
+### Environment Variables
+
+```env
+JWT_SECRET=your_secret_key
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_password
+```
+
+---
+
+## Team
+
+Built as a hackathon project to demonstrate how graph databases can power trust-aware career intelligence and recruiter decision-making systems.
