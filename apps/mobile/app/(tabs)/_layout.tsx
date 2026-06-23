@@ -22,35 +22,35 @@ export default function TabLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="home" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="home-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="skillview"
         options={{
           title: 'Skills',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="lightning-bolt" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="lightbulb-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="network"
         options={{
           title: 'Network',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account-group" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account-group-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="recruiter"
         options={{
           title: 'Recruiter',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account-tie" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account-tie-outline" color={color} />,
         }}
       />
       <Tabs.Screen

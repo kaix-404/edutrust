@@ -7,259 +7,334 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  StyleSheet,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 
 import api from '../../services/api';
 
-export default function RoleRecommendationsScreen() {
-  const [userName, setUserName] =
-    useState('');
+const T = {
+  canvas:    '#F7F5F2',
+  paper:     '#FFFFFF',
+  ink:       '#1A1714',
+  inkSub:    '#6B6560',
+  inkGhost:  '#B0AAA4',
+  rule:      '#E8E4DF',
+  accent:    '#2D5BE3',
+  accentDim: '#2D5BE308',
+  green:     '#2E7D52',
+  winner:    '#B07D2E',
+  winnerDim: '#B07D2E0C',
+};
 
-  const [recommendations, setRecommendations] =
-    useState<any[]>([]);
+const R = 14;
 
-  const loadRecommendations = async () => {
+function Divider() {
+  return <View style={s.divider} />;
+}
+
+function MatchBar({ pct }: { pct: number }) {
+  const color =
+    pct >= 75 ? T.green :
+    pct >= 40 ? T.winner : T.accent;
+  return (
+    <View style={s.barBg}>
+      <View style={[s.barFill, { width: `${pct}%`, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+export default function RoleRecommendScreen() {
+  const [userName, setUserName]       = useState('');
+  const [recs,     setRecs]           = useState<any[]>([]);
+  const [loading,  setLoading]        = useState(false);
+  const [searched, setSearched]       = useState(false);
+
+  const load = async () => {
+    if (!userName.trim()) return;
+    setLoading(true);
+    setSearched(true);
     try {
-      const response =
-        await api.get(
-          `/roles/recommend/${encodeURIComponent(
-            userName
-          )}`
-        );
-
-      setRecommendations(
-        Array.isArray(response.data)
-          ? response.data
-          : response.data.recommendations || []
+      const res = await api.get(`/roles/recommend/${encodeURIComponent(userName)}`);
+      setRecs(
+        Array.isArray(res.data)
+          ? res.data
+          : res.data.recommendations || []
       );
-
-    } catch (error) {
-      console.log(error);
+    } catch (err) {
+      console.log(err);
+      setRecs([]);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const getMedal = (
-    index: number
-  ) => {
-    if (index === 0) {
-      return '🥇';
-    }
-
-    if (index === 1) {
-      return '🥈';
-    }
-
-    if (index === 2) {
-      return '🥉';
-    }
-
-    return '📌';
   };
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: '#F5F7FB',
-      }}
-    >
+    <SafeAreaView style={s.safe}>
       <ScrollView
-        contentContainerStyle={{
-          padding: 20,
-        }}
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text
-          style={{
-            fontSize: 30,
-            fontWeight: 'bold',
-            marginBottom: 20,
-          }}
-        >
-          Role Recommendations
-        </Text>
+        {/* Header */}
+        <View style={s.pageHeader}>
+          <Text style={s.eyebrow}>Career</Text>
+          <Text style={s.title}>Role Recommendations</Text>
+        </View>
 
-        <TextInput
-          placeholder="User Name"
-          value={userName}
-          onChangeText={setUserName}
-          onSubmitEditing={loadRecommendations}
-          returnKeyType="done"
-          style={{
-            backgroundColor: 'white',
-            padding: 16,
-            borderRadius: 12,
-            marginBottom: 12,
-          }}
-        />
-
-        <TouchableOpacity
-          onPress={loadRecommendations}
-          style={{
-            backgroundColor: '#111827',
-            padding: 16,
-            borderRadius: 12,
-            alignItems: 'center',
-            marginBottom: 20,
-          }}
-        >
-          <Text
-            style={{
-              color: 'white',
-              fontWeight: '600',
-            }}
+        {/* Search */}
+        <View style={s.card}>
+          <Text style={s.label}>Username</Text>
+          <TextInput
+            placeholder="e.g. Jordan Lee"
+            placeholderTextColor={T.inkGhost}
+            value={userName}
+            onChangeText={setUserName}
+            autoCapitalize="none"
+            returnKeyType="search"
+            onSubmitEditing={load}
+            style={s.input}
+          />
+          <Divider />
+          <TouchableOpacity
+            onPress={load}
+            activeOpacity={0.85}
+            style={[s.btn, loading && { opacity: 0.6 }]}
+            disabled={loading}
           >
-            Find Best Roles
-          </Text>
-        </TouchableOpacity>
+            <Text style={s.btnText}>{loading ? 'Finding roles…' : 'Find best roles'}</Text>
+          </TouchableOpacity>
+        </View>
 
-        {recommendations.length === 0 && (
-          <View
-            style={{
-              backgroundColor: 'white',
-              padding: 20,
-              borderRadius: 16,
-            }}
-            >
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: 'bold',
-                marginBottom: 10,
-              }}
-            >
-              No Role Matches Found
-            </Text>
-
-            <Text
-              style={{
-                color: '#666',
-              }}
-            >
-              This user has no recorded skills yet.
-              Add skills to receive career
-              recommendations.
-            </Text>
+        {loading && (
+          <View style={s.loadingBlock}>
+            <ActivityIndicator color={T.accent} />
           </View>
         )}
 
-        {recommendations.length > 0 && (
-          <View
-            style={{
-              backgroundColor: 'white',
-              padding: 20,
-              borderRadius: 16,
-              marginBottom: 20,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: 'bold',
-              }}
-            >
-              🎯 Best Match
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 22,
-                marginTop: 10,
-              }}
-            >
-              {recommendations[0].role}
-            </Text>
-
-            <Text>
-              Match Score:{' '}
-              {recommendations[0].matchScore}%
-            </Text>
+        {/* Best match spotlight */}
+        {!loading && recs.length > 0 && (
+          <View style={s.winnerCard}>
+            <Text style={s.winnerEyebrow}>Best match</Text>
+            <Text style={s.winnerName}>{recs[0].role}</Text>
+            <Text style={s.winnerDetail}>Match score · {recs[0].matchScore}%</Text>
           </View>
         )}
 
-        {recommendations.map(
-          (item, index) => (
-            <View
-              key={item.role}
-              style={{
-                backgroundColor: 'white',
-                padding: 20,
-                borderRadius: 16,
-                marginBottom: 15,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: 'bold',
-                  marginBottom: 10,
-                }}
-              >
-                {getMedal(index)}{' '}
-                {item.role}
-              </Text>
-
-              <Text>
-                Match Score:{' '}
-                {item.matchScore}%
-              </Text>
-
-              <Text
-                style={{
-                  marginTop: 12,
-                  fontWeight: '600',
-                }}
-              >
-                Matched Skills
-              </Text>
-
-              {item.matchedSkills.length >
-              0 ? (
-                item.matchedSkills.map(
-                  (
-                    skill: string,
-                    i: number
-                  ) => (
-                    <Text key={i}>
-                      ✓ {skill}
-                    </Text>
-                  )
-                )
-              ) : (
-                <Text>
-                  No matching skills
-                </Text>
-              )}
-
-              <Text
-                style={{
-                  marginTop: 12,
-                  fontWeight: '600',
-                }}
-              >
-                Missing Skills
-              </Text>
-
-              {item.missingSkills.length >
-              0 ? (
-                item.missingSkills.map(
-                  (
-                    skill: string,
-                    i: number
-                  ) => (
-                    <Text key={i}>
-                      • {skill}
-                    </Text>
-                  )
-                )
-              ) : (
-                <Text>
-                  No missing skills
-                </Text>
-              )}
+        {/* All recommendations */}
+        {!loading && recs.map((item, i) => (
+          <View key={item.role} style={s.recCard}>
+            {/* Role header */}
+            <View style={s.recHeader}>
+              <Text style={s.recPos}>{String(i + 1).padStart(2, '0')}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.recRole}>{item.role}</Text>
+                <Text style={s.recScore}>{item.matchScore}% match</Text>
+              </View>
             </View>
-          )
+
+            <MatchBar pct={item.matchScore} />
+
+            {/* Matched skills */}
+            {item.matchedSkills?.length > 0 && (
+              <>
+                <Divider />
+                <Text style={s.subTitle}>Matched skills</Text>
+                <View style={s.pillsRow}>
+                  {item.matchedSkills.map((sk: string, j: number) => (
+                    <View key={j} style={s.pillGreen}>
+                      <Text style={s.pillGreenText}>{sk}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Missing skills */}
+            {item.missingSkills?.length > 0 && (
+              <>
+                <Divider />
+                <Text style={s.subTitle}>Missing skills</Text>
+                <View style={s.pillsRow}>
+                  {item.missingSkills.map((sk: string, j: number) => (
+                    <View key={j} style={s.pillGhost}>
+                      <Text style={s.pillGhostText}>{sk}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+        ))}
+
+        {/* Empty */}
+        {!loading && searched && recs.length === 0 && (
+          <View style={s.emptyCard}>
+            <Text style={s.emptyTitle}>No matches found</Text>
+            <Text style={s.emptySub}>
+              Add skills to your profile to receive role recommendations.
+            </Text>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: T.canvas },
+  scroll: { padding: 24, paddingBottom: 60 },
+
+  pageHeader: { marginBottom: 28 },
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: T.inkGhost,
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: T.ink,
+    letterSpacing: -0.6,
+  },
+
+  card: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    padding: 22,
+    marginBottom: 14,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: T.inkSub,
+    letterSpacing: 0.4,
+    marginBottom: 8,
+  },
+  input: {
+    fontSize: 16,
+    color: T.ink,
+    borderBottomWidth: 1,
+    borderBottomColor: T.rule,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 7,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: T.rule,
+    marginVertical: 16,
+  },
+  btn: {
+    backgroundColor: T.accent,
+    borderRadius: R,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  btnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+
+  loadingBlock: { paddingVertical: 40, alignItems: 'center' },
+
+  winnerCard: {
+    backgroundColor: T.winnerDim,
+    borderWidth: 1,
+    borderColor: T.winner + '28',
+    borderRadius: R + 4,
+    padding: 22,
+    marginBottom: 14,
+  },
+  winnerEyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: T.winner,
+    marginBottom: 6,
+  },
+  winnerName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: T.ink,
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  winnerDetail: { fontSize: 13, color: T.inkSub },
+
+  // Rec cards
+  recCard: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    padding: 22,
+    marginBottom: 12,
+  },
+  recHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
+  },
+  recPos: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: T.inkGhost,
+    width: 22,
+    marginTop: 2,
+    fontVariant: ['tabular-nums'],
+  },
+  recRole: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: T.ink,
+    marginBottom: 2,
+  },
+  recScore: { fontSize: 13, color: T.inkSub },
+
+  // Match bar
+  barBg: {
+    height: 5,
+    backgroundColor: T.rule,
+    borderRadius: 100,
+    overflow: 'hidden',
+  },
+  barFill: { height: 5, borderRadius: 100 },
+
+  subTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: T.inkGhost,
+    marginBottom: 10,
+  },
+
+  pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  pillGreen: {
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 100,
+    backgroundColor: T.green + '12',
+    borderWidth: 1,
+    borderColor: T.green + '30',
+  },
+  pillGreenText: { fontSize: 12, color: T.green, fontWeight: '500' },
+  pillGhost: {
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 100,
+    backgroundColor: T.canvas,
+    borderWidth: 1,
+    borderColor: T.rule,
+  },
+  pillGhostText: { fontSize: 12, color: T.inkGhost, fontWeight: '400' },
+
+  emptyCard: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: T.inkSub, marginBottom: 6 },
+  emptySub: { fontSize: 14, color: T.inkGhost, textAlign: 'center', lineHeight: 22, maxWidth: 280 },
+});

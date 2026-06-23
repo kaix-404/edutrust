@@ -1,264 +1,250 @@
-import React, {
-  useEffect,
-  useState,
-} from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   SafeAreaView,
   ScrollView,
   View,
   Text,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 
 import api from '../../services/api';
 
-export default function AnalyticsScreen() {
-  const [data, setData] =
-    useState<any>(null);
+const T = {
+  canvas:   '#F7F5F2',
+  paper:    '#FFFFFF',
+  ink:      '#1A1714',
+  inkSub:   '#6B6560',
+  inkGhost: '#B0AAA4',
+  rule:     '#E8E4DF',
+  accent:   '#2D5BE3',
+  winner:   '#B07D2E',
+};
 
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
+const R = 14;
 
-  const loadAnalytics =
-    async () => {
-      try {
-        const response =
-          await api.get(
-            '/analytics'
-          );
+function Divider() {
+  return <View style={s.divider} />;
+}
 
-        setData(
-          response.data
-        );
+function KpiCard({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={s.kpiCard}>
+      <Text style={s.kpiValue}>{value ?? 0}</Text>
+      <Text style={s.kpiLabel}>{label}</Text>
+    </View>
+  );
+}
 
-      } catch (error) {
-        console.log(error);
-      }
-    };
+function SpotlightCard({
+  eyebrow,
+  name,
+  detail,
+}: {
+  eyebrow: string;
+  name: string;
+  detail: string;
+}) {
+  return (
+    <View style={s.spotlightCard}>
+      <Text style={s.spotlightEyebrow}>{eyebrow}</Text>
+      <Text style={s.spotlightName}>{name}</Text>
+      <Text style={s.spotlightDetail}>{detail}</Text>
+    </View>
+  );
+}
 
-  if (!data) {
-    return null;
+export default function HomeScreen() {
+  const [data,    setData]    = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    try {
+      const res = await api.get('/analytics');
+      setData(res.data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.loadingBlock}>
+          <ActivityIndicator color={T.accent} />
+        </View>
+      </SafeAreaView>
+    );
   }
 
-  return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor:
-          '#F5F7FB',
-      }}
-    >
-      <ScrollView
-        contentContainerStyle={{
-          padding: 20,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 30,
-            fontWeight: 'bold',
-            marginBottom: 20,
-          }}
-        >
-          Analytics Dashboard
-        </Text>
+  if (!data) return null;
 
+  return (
+    <SafeAreaView style={s.safe}>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={s.pageHeader}>
+          <Text style={s.eyebrow}>Overview</Text>
+          <Text style={s.title}>Analytics</Text>
+        </View>
+
+        {/* KPI grid */}
+        <View style={s.kpiGrid}>
+          <KpiCard value={data.totalUsers}        label="Users"        />
+          <KpiCard value={data.totalSkills}       label="Skills"       />
+          <KpiCard value={data.totalRoles}        label="Roles"        />
+          <KpiCard value={data.totalEndorsements} label="Endorsements" />
+        </View>
+
+        <Divider />
+
+        {/* Spotlight section */}
+        <Text style={s.sectionTitle}>Community spotlights</Text>
         <View
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
             justifyContent: 'space-between',
-            marginBottom: 15,
+            marginBottom: 12,
           }}
         >
           {[
             {
-              label: 'Users',
-              value: data.totalUsers,
+              eyebrow: 'Most trusted',
+              name: data.mostTrustedUser?.name ?? '—',
+              detail: `Trust score · ${data.mostTrustedUser?.trustScore ?? 0}`,
             },
             {
-              label: 'Skills',
-              value: data.totalSkills,
+              eyebrow: 'Most influential',
+              name: data.mostInfluentialUser?.name ?? '—',
+              detail: `Influence score · ${data.mostInfluentialUser?.influenceScore ?? 0}`,
             },
             {
-              label: 'Roles',
-              value: data.totalRoles,
+              eyebrow: 'Most popular skill',
+              name: data.mostPopularSkill?.skill ?? '—',
+              detail: `Held by ${data.mostPopularSkill?.count ?? 0} users`,
             },
-            {
-              label: 'Endorsements',
-              value: data.totalEndorsements,
-            },
-          ].map((card) => (
+          ].map((item) => (
             <View
-              key={card.label}
+              key={item.eyebrow}
               style={{
-                width: '48%',
-                backgroundColor: 'white',
-                padding: 20,
-                borderRadius: 16,
+                width: '33%',
                 marginBottom: 12,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 28,
-                  fontWeight: 'bold',
-                  textAlign: 'center',
-                }}
-              >
-                {card.value ?? 0}
-              </Text>
-
-              <Text
-                style={{
-                  fontSize: 16,
-                  textAlign: 'center',
-                }}
-              >
-                {card.label}
-              </Text>
+              <SpotlightCard
+                eyebrow={item.eyebrow}
+                name={item.name}
+                detail={item.detail}
+              />
             </View>
           ))}
-        </View>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            marginBottom: 15,
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              minWidth: 160,
-              backgroundColor: 'white',
-              padding: 20,
-              borderRadius: 16,
-              marginRight: 8,
-              marginBottom: 15,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: 'bold',
-                textAlign: 'center',
-                marginBottom: 10,
-              }}
-            >
-              👑 Most Trusted User
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                textAlign: 'center',
-                marginBottom: 5,
-              }}
-            >
-              {data.mostTrustedUser.name}
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 14,
-                textAlign: 'center',
-              }}
-            >
-              Trust Score: {data.mostTrustedUser.trustScore}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flex: 1,
-              minWidth: 160,
-              backgroundColor: 'white',
-              padding: 20,
-              borderRadius: 16,
-              marginRight: 8,
-              marginBottom: 15,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: 'bold',
-                textAlign: 'center',
-                marginBottom: 10,
-              }}
-            >
-              🌟 Most Influential User
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                textAlign: 'center',
-                marginBottom: 5,
-              }}
-            >
-              {data.mostInfluentialUser.name}
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 14,
-                textAlign: 'center',
-              }}
-            >
-              Influence: {data.mostInfluentialUser.influenceScore}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flex: 1,
-              minWidth: 160,
-              backgroundColor: 'white',
-              padding: 20,
-              borderRadius: 16,
-              marginBottom: 15,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: 'bold',
-                textAlign: 'center',
-                marginBottom: 10,
-              }}
-            >
-              🔥 Most Popular Skill
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                textAlign: 'center',
-                marginBottom: 5,
-              }}
-            >
-              {data.mostPopularSkill.skill}
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 14,
-                textAlign: 'center',
-              }}
-            >
-              Used by {data.mostPopularSkill.count} users
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  safe:  { flex: 1, backgroundColor: T.canvas },
+  scroll: { padding: 24, paddingBottom: 60 },
+
+  loadingBlock: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  pageHeader: { marginBottom: 28 },
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: T.inkGhost,
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: T.ink,
+    letterSpacing: -0.6,
+  },
+
+  // KPI grid — 2-column
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 8,
+  },
+  kpiCard: {
+    width: '47.5%',
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+  },
+  kpiValue: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: T.ink,
+    letterSpacing: -0.8,
+    marginBottom: 4,
+  },
+  kpiLabel: {
+    fontSize: 13,
+    color: T.inkSub,
+    fontWeight: '400',
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: T.rule,
+    marginVertical: 28,
+  },
+
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.inkSub,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  },
+
+  // Spotlight cards — stacked, editorial
+  spotlightCard: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    padding: 22,
+    marginBottom: 12,
+  },
+  spotlightEyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: T.winner,
+    marginBottom: 6,
+  },
+  spotlightName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: T.ink,
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  spotlightDetail: {
+    fontSize: 13,
+    color: T.inkSub,
+  },
+});
