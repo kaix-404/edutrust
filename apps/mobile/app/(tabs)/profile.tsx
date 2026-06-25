@@ -288,6 +288,7 @@ export default function ProfileScreen() {
   const [trustScore,     setTrustScore]     = useState(0);
   const [endorsements,   setEndorsements]   = useState(0);
   const [influenceScore, setInfluenceScore] = useState(0);
+  const [badges,         setBadges]         = useState<any[]>([]);
   const [loading,        setLoading]        = useState(false);
   const [modalVisible,   setModalVisible]   = useState(false);
   const [signingOut,     setSigningOut]     = useState(false);
@@ -301,15 +302,25 @@ export default function ProfileScreen() {
     if (!user?.name) return;
     setLoading(true);
     try {
-      const [skillsRes, endorseRes, influenceRes] = await Promise.all([
+      const [skillsRes, endorseRes, influenceRes, badgeRes] = await Promise.all([
         api.get(`/users/${encodeURIComponent(user.name)}/skills`),
         api.get(`/endorsements/${encodeURIComponent(user.name)}`),
         api.get('/endorsements/influence'),
+        api.get(`/badges/${encodeURIComponent(user.name)}`),
       ]);
 
-      setSkills(skillsRes.data.skills || []);
+      // Normalize skills response: API returns an array of { skill } objects
+      const skillsPayload = skillsRes.data;
+      let skillsList: string[] = [];
+      if (Array.isArray(skillsPayload)) {
+        skillsList = skillsPayload.map((s: any) => s.skill || s.name || String(s));
+      } else {
+        skillsList = skillsPayload?.skills || [];
+      }
+      setSkills(skillsList);
       setTrustScore(endorseRes.data.trustScore || 0);
       setEndorsements(endorseRes.data.endorsements || 0);
+      setBadges(badgeRes.data || []);
 
       const rankings = Array.isArray(influenceRes.data) ? influenceRes.data : [];
       const me = rankings.find((item: any) => item.user === user.name);
@@ -401,6 +412,49 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <Text style={s.empty}>No skills on record yet.</Text>
+          )}
+        </View>
+
+        <View style={s.card}>
+          <Text style={s.sectionTitle}>
+            Achievements
+          </Text>
+
+          {badges.length > 0 ? (
+            badges.map(
+              (badge, index) => (
+                <View
+                  key={index}
+                  style={{
+                    paddingVertical: 10,
+                    borderBottomWidth: 1,
+                    borderBottomColor:
+                      '#E8E4DF',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 16,
+                    }}
+                  >
+                    🏅 {badge.badge}
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: '#666',
+                      marginTop: 4,
+                    }}
+                  >
+                    Score: {badge.score}
+                  </Text>
+                </View>
+              )
+            )
+          ) : (
+            <Text style={s.empty}>
+              No badges earned yet.
+            </Text>
           )}
         </View>
 

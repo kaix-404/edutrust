@@ -87,6 +87,10 @@ const register = async (req, res) => {
     res.json({
       success: true,
       token,
+      user: {
+        name,
+        email,
+      },
       message:
         'User registered successfully',
     });
