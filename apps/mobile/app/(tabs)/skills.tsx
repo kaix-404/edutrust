@@ -5,7 +5,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   SafeAreaView,
   StyleSheet,
   Platform,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const T = {
   canvas:   '#F7F5F2',
@@ -24,99 +24,11 @@ const T = {
   accent:   '#2D5BE3',
   green:    '#2E7D52',
   greenDim: '#2E7D520C',
+  danger:   '#C0392B',
+  dangerDim:'#C0392B08',
 };
 
 const R = 14;
-
-function Label({ children }: { children: string }) {
-  return <Text style={s.label}>{children}</Text>;
-}
-
-export default function AddSkillScreen() {
-  const [userName,  setUserName]  = useState('');
-  const [skill,     setSkill]     = useState('');
-  const [loading,   setLoading]   = useState(false);
-  const [lastAdded, setLastAdded] = useState('');
-
-  const addSkill = async () => {
-    if (!userName.trim() || !skill.trim()) return;
-    setLoading(true);
-    try {
-      await api.post(`/users/${encodeURIComponent(userName)}/skills`, { skill });
-      setLastAdded(skill.trim());
-      setSkill('');
-    } catch {
-      Alert.alert('Error', 'Failed to add skill. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <SafeAreaView style={s.safe}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={s.inner}>
-          {/* Header */}
-          <View style={s.pageHeader}>
-            <Text style={s.eyebrow}>Skills</Text>
-            <Text style={s.title}>Add a skill</Text>
-          </View>
-
-          {/* Form */}
-          <View style={s.card}>
-            <Label>Username</Label>
-            <TextInput
-              placeholder="Your username"
-              placeholderTextColor={T.inkGhost}
-              value={userName}
-              onChangeText={setUserName}
-              autoCapitalize="none"
-              returnKeyType="next"
-              style={s.input}
-            />
-
-            <View style={{ height: 22 }} />
-
-            <Label>Skill name</Label>
-            <TextInput
-              placeholder="e.g. TypeScript"
-              placeholderTextColor={T.inkGhost}
-              value={skill}
-              onChangeText={setSkill}
-              returnKeyType="done"
-              onSubmitEditing={addSkill}
-              style={s.input}
-            />
-
-            <View style={s.divider} />
-
-            <TouchableOpacity
-              onPress={addSkill}
-              activeOpacity={0.85}
-              style={[s.btn, loading && { opacity: 0.6 }]}
-              disabled={loading}
-            >
-              <Text style={s.btnText}>{loading ? 'Adding…' : 'Add skill'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Success notice */}
-          {lastAdded ? (
-            <View style={s.successCard}>
-              <Text style={s.successText}>
-                <Text style={s.successBold}>{lastAdded}</Text>
-                {' '}was added successfully.
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
-}
 
 const s = StyleSheet.create({
   safe:  { flex: 1, backgroundColor: T.canvas },
@@ -136,6 +48,34 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: T.ink,
     letterSpacing: -0.6,
+  },
+
+  // Logged-in-as strip
+  sessionCard: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sessionLabel: {
+    fontSize: 12,
+    color: T.inkGhost,
+    fontWeight: '500',
+  },
+  sessionName: {
+    fontSize: 15,
+    color: T.ink,
+    fontWeight: '600',
+  },
+  sessionDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: T.green,
   },
 
   card: {
@@ -184,4 +124,123 @@ const s = StyleSheet.create({
     lineHeight: 20,
   },
   successBold: { fontWeight: '600' },
+
+  errorCard: {
+    backgroundColor: T.dangerDim,
+    borderWidth: 1,
+    borderColor: T.danger + '28',
+    borderRadius: R,
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 14,
+    color: T.danger,
+    lineHeight: 20,
+  },
 });
+
+function Label({ children }: { children: string }) {
+  return <Text style={s.label}>{children}</Text>;
+}
+
+export default function AddSkillScreen() {
+  const { user } = useAuth();
+
+  const [skill,     setSkill]     = useState('');
+  const [loading,   setLoading]   = useState(false);
+  const [lastAdded, setLastAdded] = useState('');
+  const [error,     setError]     = useState('');
+
+  const addSkill = async () => {
+    if (!skill.trim()) return;
+    if (!user?.name) {
+      setError('No active session found. Please sign in again.');
+      return;
+    }
+
+    setLoading(true);
+    setLastAdded('');
+    setError('');
+
+    try {
+      await api.post(`/users/${encodeURIComponent(user.name)}/skills`, { skill: skill.trim() });
+      setLastAdded(skill.trim());
+      setSkill('');
+    } catch {
+      setError('Failed to add skill. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={s.safe}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={s.inner}>
+
+          {/* Header */}
+          <View style={s.pageHeader}>
+            <Text style={s.eyebrow}>Skills</Text>
+            <Text style={s.title}>Add a skill</Text>
+          </View>
+
+          {/* Session indicator — shows who the skill will be added for */}
+          <View style={s.sessionCard}>
+            <View style={s.sessionDot} />
+            <View>
+              <Text style={s.sessionLabel}>Adding skill for</Text>
+              <Text style={s.sessionName}>{user?.name ?? '—'}</Text>
+            </View>
+          </View>
+
+          {/* Form — username field removed, pulled from session */}
+          <View style={s.card}>
+            <Label>Skill name</Label>
+            <TextInput
+              placeholder="e.g. TypeScript"
+              placeholderTextColor={T.inkGhost}
+              value={skill}
+              onChangeText={v => { setSkill(v); setError(''); setLastAdded(''); }}
+              returnKeyType="done"
+              onSubmitEditing={addSkill}
+              autoFocus
+              style={s.input}
+            />
+
+            <View style={s.divider} />
+
+            <TouchableOpacity
+              onPress={addSkill}
+              activeOpacity={0.85}
+              style={[s.btn, (loading || !skill.trim()) && { opacity: 0.5 }]}
+              disabled={loading || !skill.trim()}
+            >
+              <Text style={s.btnText}>{loading ? 'Adding…' : 'Add skill'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Success notice */}
+          {lastAdded ? (
+            <View style={s.successCard}>
+              <Text style={s.successText}>
+                <Text style={s.successBold}>{lastAdded}</Text>
+                {' '}was added to your profile.
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Error notice */}
+          {error ? (
+            <View style={s.errorCard}>
+              <Text style={s.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}

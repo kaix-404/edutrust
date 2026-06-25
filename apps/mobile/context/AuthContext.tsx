@@ -42,10 +42,8 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   const login = async (token: string, user: any) => {
-    // Update state first so the UI responds immediately
     setToken(token);
     setUser(user);
-    // Persist in the background — non-blocking
     try {
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
@@ -55,13 +53,8 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   const logout = () => {
-    // Null state SYNCHRONOUSLY first — the root layout re-renders instantly
-    // and swaps (tabs) → login. This is the fix: the working reference project
-    // does exactly this. Awaiting AsyncStorage before nulling state means the
-    // root navigator never sees the token change if AsyncStorage is slow.
     setToken(null);
     setUser(null);
-    // Fire-and-forget storage clear — doesn't need to block navigation
     AsyncStorage.clear().catch(err => console.log('AsyncStorage clear failed:', err));
   };
 

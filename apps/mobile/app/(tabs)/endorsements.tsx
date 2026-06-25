@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const T = {
   canvas:    '#F7F5F2',
@@ -25,6 +26,8 @@ const T = {
   accentDim: '#2D5BE308',
   green:     '#2E7D52',
   greenDim:  '#2E7D520C',
+  danger:    '#C0392B',
+  dangerDim: '#C0392B08',
 };
 
 const R = 14;
@@ -47,10 +50,11 @@ function MetricRow({ label, value }: { label: string; value: string | number }) 
 }
 
 export default function EndorsementsScreen() {
+  const { user } = useAuth();
+
   // Create endorsement
-  const [fromUser, setFromUser] = useState('');
   const [toUser,   setToUser]   = useState('');
-  const [sendStatus, setSendStatus] = useState<'idle' | 'ok' | 'err'>('idle');
+  const [sendStatus, setSendStatus] = useState<'idle' | 'ok' | 'err' | 'notfound'>('idle');
   const [sendLoading, setSendLoading] = useState(false);
 
   // Check trust
@@ -60,18 +64,22 @@ export default function EndorsementsScreen() {
   const [numEndorse,   setNumEndorse]   = useState<number | null>(null);
   const [fetchLoading, setFetchLoading] = useState(false);
   const [fetched,      setFetched]      = useState(false);
+  const [fetchStatus,  setFetchStatus]  = useState<'idle' | 'ok' | 'err' | 'notfound'>('idle');
 
   const endorseUser = async () => {
-    if (!fromUser.trim() || !toUser.trim()) return;
+    if (!user?.name || !toUser.trim()) return;
     setSendLoading(true);
     setSendStatus('idle');
     try {
-      await api.post('/endorsements', { endorser: fromUser, endorsee: toUser });
+      await api.post('/endorsements', { endorser: user.name, endorsee: toUser });
       setSendStatus('ok');
-      setFromUser('');
       setToUser('');
-    } catch {
-      setSendStatus('err');
+    } catch (error: any) {
+        if (error?.response?.status === 404 || error?.response?.data?.error?.includes('not found')) {
+        setSendStatus('notfound');
+      } else {
+        setSendStatus('err');
+      }
     } finally {
       setSendLoading(false);
     }
@@ -81,14 +89,24 @@ export default function EndorsementsScreen() {
     if (!searchUser.trim()) return;
     setFetchLoading(true);
     setFetched(false);
+    setFetchStatus('idle');
     try {
       const res = await api.get(`/endorsements/${encodeURIComponent(searchUser)}`);
       setEndorsers(res.data.endorsedBy || []);
       setTrustScore(res.data.trustScore ?? 0);
       setNumEndorse(res.data.endorsements ?? 0);
       setFetched(true);
-    } catch {
-      Alert.alert('Error', 'Could not fetch trust data for this user.');
+      setFetchStatus('ok');
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || '';
+      if (error?.response?.status === 404 || String(msg).toLowerCase().includes('not found')) {
+        setFetchStatus('notfound');
+        setEndorsers([]);
+        setTrustScore(null);
+        setNumEndorse(null);
+      } else {
+        setFetchStatus('err');
+      }
     } finally {
       setFetchLoading(false);
     }
@@ -111,18 +129,16 @@ export default function EndorsementsScreen() {
         <View style={s.card}>
           <Text style={s.sectionTitle}>Create endorsement</Text>
 
-          <Label>From</Label>
-          <TextInput
-            placeholder="Endorser username"
-            placeholderTextColor={T.inkGhost}
-            value={fromUser}
-            onChangeText={setFromUser}
-            autoCapitalize="none"
-            returnKeyType="next"
-            style={s.input}
-          />
+          {/* Session indicator — shows who the endorsement will be from */}
+          <View style={s.sessionCard}>
+            <View style={s.sessionDot} />
+            <View>
+              <Text style={s.sessionLabel}>Endorser</Text>
+              <Text style={s.sessionName}>{user?.name ?? '—'}</Text>
+            </View>
+          </View>
 
-          <View style={{ height: 20 }} />
+          <View style={{ height: 14 }} />
 
           <Label>To</Label>
           <TextInput
@@ -141,8 +157,8 @@ export default function EndorsementsScreen() {
           <TouchableOpacity
             onPress={endorseUser}
             activeOpacity={0.85}
-            style={[s.btn, sendLoading && { opacity: 0.6 }]}
-            disabled={sendLoading}
+            style={[s.btn, (sendLoading || !toUser.trim()) && { opacity: 0.5 }]}
+            disabled={sendLoading || !toUser.trim()}
           >
             <Text style={s.btnText}>{sendLoading ? 'Sending…' : 'Endorse'}</Text>
           </TouchableOpacity>
@@ -151,6 +167,13 @@ export default function EndorsementsScreen() {
             <View style={[s.notice, s.noticeGreen]}>
               <Text style={[s.noticeText, { color: T.green }]}>
                 Endorsement created successfully.
+              </Text>
+            </View>
+          )}
+          {sendStatus === 'notfound' && (
+            <View style={[s.notice, s.noticeRed]}>
+              <Text style={[s.noticeText, { color: '#C0392B' }]}>
+                User not found.
               </Text>
             </View>
           )}
@@ -189,6 +212,16 @@ export default function EndorsementsScreen() {
           >
             <Text style={s.btnGhostText}>{fetchLoading ? 'Looking up…' : 'View trust profile'}</Text>
           </TouchableOpacity>
+          {fetchStatus === 'notfound' && (
+            <View style={[s.notice, s.noticeRed]}>
+              <Text style={[s.noticeText, { color: '#C0392B' }]}>User not found.</Text>
+            </View>
+          )}
+          {fetchStatus === 'err' && (
+            <View style={[s.notice, s.noticeRed]}>
+              <Text style={[s.noticeText, { color: '#C0392B' }]}>Could not fetch trust data for this user.</Text>
+            </View>
+          )}
         </View>
 
         {/* ── Results ────────────────────────────────────────────────────── */}
@@ -292,6 +325,34 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   btnGhostText: { color: T.inkSub, fontWeight: '500', fontSize: 15 },
+
+  // Logged-in-as strip
+  sessionCard: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sessionLabel: {
+    fontSize: 12,
+    color: T.inkGhost,
+    fontWeight: '500',
+  },
+  sessionName: {
+    fontSize: 15,
+    color: T.ink,
+    fontWeight: '600',
+  },
+  sessionDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: T.green,
+  },
 
   notice: {
     borderRadius: R - 2,

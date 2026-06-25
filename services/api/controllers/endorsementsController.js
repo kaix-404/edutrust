@@ -12,6 +12,24 @@ const endorseUser = async (req, res) => {
   }
 
   try {
+      const checkResult = await session.run(
+        `
+        MATCH (a:User {name:$endorser})
+        MATCH (b:User {name:$endorsee})
+        RETURN a, b
+        `,
+        {
+          endorser,
+          endorsee
+        }
+      );
+
+      if (checkResult.records.length === 0) {
+        return res.status(404).json({
+          error: 'User not found'
+        });
+      }
+
     await session.run(
       `
       MATCH (a:User {name:$endorser})
@@ -48,6 +66,19 @@ const getEndorsements = async (req, res) => {
   const userName = req.params.user;
 
   try {
+    // Ensure the user exists
+    const existsResult = await session.run(
+      `
+      MATCH (u:User {name:$userName})
+      RETURN u
+      `,
+      { userName }
+    );
+
+    if (existsResult.records.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     const result = await session.run(
       `
       MATCH (endorser:User)-[:ENDORSES]->(u:User {name:$userName})

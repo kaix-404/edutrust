@@ -251,7 +251,6 @@ function SignOutModal({
       onRequestClose={onCancel}
     >
       <Pressable style={s.modalBackdrop} onPress={onCancel}>
-        {/* Stop tap-through to backdrop from closing when tapping the box */}
         <Pressable style={s.modalBox} onPress={e => e.stopPropagation()}>
           <Text style={s.modalTitle}>Sign out</Text>
           <Text style={s.modalBody}>
@@ -296,7 +295,6 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (authLoading) return;
     if (user?.name) load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading]);
 
   const load = async () => {

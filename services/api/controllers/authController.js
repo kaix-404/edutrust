@@ -54,6 +54,18 @@ const register = async (req, res) => {
       }
     }
 
+    const token =
+      jwt.sign(
+        {
+          name,
+          email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: '7d',
+        }
+      );
+
     const hashedPassword =
       await bcrypt.hash(password, 10);
 
@@ -74,6 +86,7 @@ const register = async (req, res) => {
 
     res.json({
       success: true,
+      token,
       message:
         'User registered successfully',
     });
