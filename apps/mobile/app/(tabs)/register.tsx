@@ -15,6 +15,7 @@ import {
 
 import { router } from 'expo-router';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const T = {
   canvas:    '#F7F5F2',
@@ -32,22 +33,75 @@ function Label({ children }: { children: string }) {
   return <Text style={s.label}>{children}</Text>;
 }
 
+const isValidEmail = (email: string) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+};
+
+const T_DANGER = '#C0392B';
+
 export default function RegisterScreen() {
-  const [name,     setName]     = useState('');
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const { login } = useAuth();
+  const [name,       setName]       = useState('');
+  const [email,      setEmail]      = useState('');
+  const [password,   setPassword]   = useState('');
+  const [loading,    setLoading]    = useState(false);
+  const [nameError,  setNameError]  = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passError,  setPassError]  = useState('');
+
+  const validateFields = () => {
+    let valid = true;
+    setNameError('');
+    setEmailError('');
+    setPassError('');
+
+    if (!name.trim()) {
+      setNameError('Full name is required');
+      valid = false;
+    } else if (name.trim().length < 2) {
+      setNameError('Name must be at least 2 characters');
+      valid = false;
+    }
+
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      valid = false;
+    } else if (!isValidEmail(email)) {
+      setEmailError('Please enter a valid email');
+      valid = false;
+    }
+
+    if (!password.trim()) {
+      setPassError('Password is required');
+      valid = false;
+    } else if (password.length < 6) {
+      setPassError('Password must be at least 6 characters');
+      valid = false;
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])/.test(password)) {
+      setPassError('Password must contain uppercase and lowercase letters');
+      valid = false;
+    }
+
+    return valid;
+  };
 
   const register = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) return;
+    if (!validateFields()) return;
     setLoading(true);
     try {
-      await api.post('/auth/register', { name, email, password });
-      Alert.alert('Account created', 'You can now sign in with your credentials.', [
-        { text: 'Sign in', onPress: () => router.replace('/login') },
-      ]);
+      const response = await api.post('/auth/register', { name, email, password });
+      if (response.data.token && response.data.user) {
+        await login(response.data.token, response.data.user);
+        router.replace('/(tabs)/profile');
+      }
     } catch (error: any) {
-      Alert.alert('Registration failed', error?.response?.data?.error || 'Please try again.');
+      const errorMsg = error?.response?.data?.error || 'Please try again.';
+      if (errorMsg.toLowerCase().includes('email') || errorMsg.toLowerCase().includes('already')) {
+        setEmailError('Email already in use');
+      } else {
+        Alert.alert('Registration failed', errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -78,37 +132,49 @@ export default function RegisterScreen() {
               placeholder="Jordan Lee"
               placeholderTextColor={T.inkGhost}
               value={name}
-              onChangeText={setName}
+              onChangeText={(val) => {
+                setName(val);
+                if (nameError) setNameError('');
+              }}
               autoCapitalize="words"
               returnKeyType="next"
-              style={s.input}
+              style={[s.input, nameError && s.inputError]}
             />
+            {nameError ? <Text style={s.errorText}>{nameError}</Text> : <View style={{ height: 22 }} />}
 
-            <View style={{ height: 22 }} />
+            <View style={{ height: 10 }} />
             <Label>Email address</Label>
             <TextInput
               placeholder="you@example.com"
               placeholderTextColor={T.inkGhost}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(val) => {
+                setEmail(val);
+                if (emailError) setEmailError('');
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               returnKeyType="next"
-              style={s.input}
+              style={[s.input, emailError && s.inputError]}
             />
+            {emailError ? <Text style={s.errorText}>{emailError}</Text> : <View style={{ height: 22 }} />}
 
-            <View style={{ height: 22 }} />
+            <View style={{ height: 10 }} />
             <Label>Password</Label>
             <TextInput
               placeholder="••••••••"
               placeholderTextColor={T.inkGhost}
               secureTextEntry
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(val) => {
+                setPassword(val);
+                if (passError) setPassError('');
+              }}
               returnKeyType="done"
               onSubmitEditing={register}
-              style={s.input}
+              style={[s.input, passError && s.inputError]}
             />
+            {passError ? <Text style={s.errorText}>{passError}</Text> : <View style={{ height: 22 }} />}
 
             <View style={s.divider} />
 
@@ -196,6 +262,16 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  inputError: {
+    borderBottomColor: T_DANGER,
+  },
+  errorText: {
+    fontSize: 12,
+    color: T_DANGER,
+    marginTop: 6,
+    marginBottom: 16,
+    fontWeight: '500',
+  },
 
   linkRow: { alignItems: 'center', paddingVertical: 4 },
   linkText: { fontSize: 14, color: T.inkSub },

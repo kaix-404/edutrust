@@ -8,7 +8,8 @@ import {
   SafeAreaView,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  Modal,
+  Pressable,
 } from 'react-native';
 
 import { router } from 'expo-router';
@@ -30,176 +31,8 @@ const T = {
 
 const R = 14;
 
-function Divider() {
-  return <View style={s.divider} />;
-}
-
-function MetricRow({ label, value }: { label: string; value: string | number }) {
-  return (
-    <View style={s.metricRow}>
-      <Text style={s.metricLabel}>{label}</Text>
-      <Text style={s.metricValue}>{value}</Text>
-    </View>
-  );
-}
-
-function SkillTag({ name }: { name: string }) {
-  return (
-    <View style={s.skillTag}>
-      <Text style={s.skillTagText}>{name}</Text>
-    </View>
-  );
-}
-
-export default function ProfileScreen() {
-  const { user, logout, loading: authLoading } = useAuth();
-
-  const [skills,         setSkills]         = useState<string[]>([]);
-  const [trustScore,     setTrustScore]     = useState(0);
-  const [endorsements,   setEndorsements]   = useState(0);
-  const [influenceScore, setInfluenceScore] = useState(0);
-  const [loading,        setLoading]        = useState(true);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!user) {
-      router.replace('/login');
-      return;
-    }
-
-    load();
-  }, [user, authLoading]);
-
-  const load = async () => {
-    if (!user?.name) return;
-    
-    try {
-      const [skillsRes, endorseRes, influenceRes] = await Promise.all([
-        api.get(`/users/${encodeURIComponent(user.name)}/skills`),
-        api.get(`/endorsements/${encodeURIComponent(user.name)}`),
-        api.get('/endorsements/influence'),
-      ]);
-
-      setSkills(skillsRes.data.skills || []);
-      setTrustScore(endorseRes.data.trustScore || 0);
-      setEndorsements(endorseRes.data.endorsements || 0);
-
-      const rankings = Array.isArray(
-        influenceRes.data
-      )
-        ? influenceRes.data
-        : [];
-
-      const me = rankings.find(
-        (item: any) =>
-          item.user === user.name
-      );
-      setInfluenceScore(me?.influenceScore || 0);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const confirmLogout = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.dismissAll();
-          router.replace('/login');
-        },
-      },
-    ]);
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={s.safe}>
-        <View style={s.loadingBlock}>
-          <ActivityIndicator color={T.accent} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  const initials = user?.name
-    ?.split(' ')
-    .map((w: string) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) ?? '?';
-
-  return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Page header */}
-        <View style={s.pageHeader}>
-          <Text style={s.eyebrow}>Account</Text>
-          <Text style={s.title}>My Profile</Text>
-        </View>
-
-        {/* Identity card */}
-        <View style={s.card}>
-          <View style={s.identityRow}>
-            <View style={s.avatar}>
-              <Text style={s.avatarText}>{initials}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.name}>{user?.name}</Text>
-              <Text style={s.email}>{user?.email}</Text>
-            </View>
-          </View>
-
-          <Divider />
-
-          <MetricRow label="Trust score"   value={trustScore}     />
-          <MetricRow label="Endorsements"  value={endorsements}   />
-          <MetricRow label="Influence"     value={influenceScore} />
-          <MetricRow label="Skills"        value={skills.length}  />
-        </View>
-
-        {/* Skills card */}
-        <View style={s.card}>
-          <Text style={s.sectionTitle}>Verified skills</Text>
-          {skills.length > 0 ? (
-            <View style={s.pillsRow}>
-              {skills.map((skill, i) => (
-                <SkillTag key={i} name={skill} />
-              ))}
-            </View>
-          ) : (
-            <Text style={s.empty}>No skills on record yet.</Text>
-          )}
-        </View>
-
-        {/* Sign out */}
-        <TouchableOpacity
-          onPress={confirmLogout}
-          activeOpacity={0.85}
-          style={s.signOutBtn}
-        >
-          <Text style={s.signOutText}>Sign out</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
 const s = StyleSheet.create({
-  safe:  { flex: 1, backgroundColor: T.canvas },
+  safe:   { flex: 1, backgroundColor: T.canvas },
   scroll: { padding: 24, paddingBottom: 60 },
 
   loadingBlock: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -227,7 +60,6 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Identity
   identityRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,7 +98,6 @@ const s = StyleSheet.create({
     marginVertical: 18,
   },
 
-  // Metric rows
   metricRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,7 +118,6 @@ const s = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // Skills
   pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   skillTag: {
     paddingHorizontal: 13,
@@ -301,7 +131,6 @@ const s = StyleSheet.create({
 
   empty: { fontSize: 14, color: T.inkGhost },
 
-  // Sign out
   signOutBtn: {
     marginTop: 8,
     backgroundColor: T.dangerDim,
@@ -311,9 +140,283 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
+  signOutBtnDisabled: { opacity: 0.5 },
   signOutText: {
     color: T.danger,
     fontWeight: '600',
     fontSize: 15,
   },
+
+  // ── Confirm modal ──────────────────────────────────────────────────────────
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: '#1A171488',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  modalBox: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    padding: 28,
+    width: '100%',
+    maxWidth: 360,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: T.ink,
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  modalBody: {
+    fontSize: 14,
+    color: T.inkSub,
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  modalRule: {
+    height: 1,
+    backgroundColor: T.rule,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalCancel: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: R,
+    borderWidth: 1,
+    borderColor: T.rule,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: T.inkSub,
+  },
+  modalConfirm: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: R,
+    backgroundColor: T.danger,
+    alignItems: 'center',
+  },
+  modalConfirmText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+  },
 });
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function Divider() {
+  return <View style={s.divider} />;
+}
+
+function MetricRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <View style={s.metricRow}>
+      <Text style={s.metricLabel}>{label}</Text>
+      <Text style={s.metricValue}>{value}</Text>
+    </View>
+  );
+}
+
+function SkillTag({ name }: { name: string }) {
+  return (
+    <View style={s.skillTag}>
+      <Text style={s.skillTagText}>{name}</Text>
+    </View>
+  );
+}
+
+function SignOutModal({
+  visible,
+  onCancel,
+  onConfirm,
+}: {
+  visible: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCancel}
+    >
+      <Pressable style={s.modalBackdrop} onPress={onCancel}>
+        {/* Stop tap-through to backdrop from closing when tapping the box */}
+        <Pressable style={s.modalBox} onPress={e => e.stopPropagation()}>
+          <Text style={s.modalTitle}>Sign out</Text>
+          <Text style={s.modalBody}>
+            Are you sure you want to sign out? You'll need to sign in again to access your profile.
+          </Text>
+          <View style={s.modalRule} />
+          <View style={s.modalActions}>
+            <TouchableOpacity
+              onPress={onCancel}
+              activeOpacity={0.7}
+              style={s.modalCancel}
+            >
+              <Text style={s.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onConfirm}
+              activeOpacity={0.85}
+              style={s.modalConfirm}
+            >
+              <Text style={s.modalConfirmText}>Sign out</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
+export default function ProfileScreen() {
+  const { user, logout, loading: authLoading } = useAuth();
+
+  const [skills,         setSkills]         = useState<string[]>([]);
+  const [trustScore,     setTrustScore]     = useState(0);
+  const [endorsements,   setEndorsements]   = useState(0);
+  const [influenceScore, setInfluenceScore] = useState(0);
+  const [loading,        setLoading]        = useState(false);
+  const [modalVisible,   setModalVisible]   = useState(false);
+  const [signingOut,     setSigningOut]     = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user?.name) load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading]);
+
+  const load = async () => {
+    if (!user?.name) return;
+    setLoading(true);
+    try {
+      const [skillsRes, endorseRes, influenceRes] = await Promise.all([
+        api.get(`/users/${encodeURIComponent(user.name)}/skills`),
+        api.get(`/endorsements/${encodeURIComponent(user.name)}`),
+        api.get('/endorsements/influence'),
+      ]);
+
+      setSkills(skillsRes.data.skills || []);
+      setTrustScore(endorseRes.data.trustScore || 0);
+      setEndorsements(endorseRes.data.endorsements || 0);
+
+      const rankings = Array.isArray(influenceRes.data) ? influenceRes.data : [];
+      const me = rankings.find((item: any) => item.user === user.name);
+      setInfluenceScore(me?.influenceScore || 0);
+
+    } catch (err) {
+      console.log('Profile load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    setModalVisible(false);
+    delete api.defaults.headers.common['Authorization'];
+    logout();
+    router.replace('/login');
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  if (authLoading || loading) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.loadingBlock}>
+          <ActivityIndicator color={T.accent} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    router.replace('/login');
+    return null;
+  }
+
+  const initials = user.name
+    ?.split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) ?? '?';
+
+  return (
+    <SafeAreaView style={s.safe}>
+      <SignOutModal
+        visible={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        onConfirm={handleLogout}
+      />
+
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={s.pageHeader}>
+          <Text style={s.eyebrow}>Account</Text>
+          <Text style={s.title}>My Profile</Text>
+        </View>
+
+        <View style={s.card}>
+          <View style={s.identityRow}>
+            <View style={s.avatar}>
+              <Text style={s.avatarText}>{initials}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.name}>{user.name}</Text>
+              <Text style={s.email}>{user.email}</Text>
+            </View>
+          </View>
+
+          <Divider />
+
+          <MetricRow label="Trust score"  value={trustScore}     />
+          <MetricRow label="Endorsements" value={endorsements}   />
+          <MetricRow label="Influence"    value={influenceScore} />
+          <MetricRow label="Skills"       value={skills.length}  />
+        </View>
+
+        <View style={s.card}>
+          <Text style={s.sectionTitle}>Verified skills</Text>
+          {skills.length > 0 ? (
+            <View style={s.pillsRow}>
+              {skills.map((skill, i) => (
+                <SkillTag key={i} name={skill} />
+              ))}
+            </View>
+          ) : (
+            <Text style={s.empty}>No skills on record yet.</Text>
+          )}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.85}
+          disabled={signingOut}
+          style={[s.signOutBtn, signingOut && s.signOutBtnDisabled]}
+        >
+          <Text style={s.signOutText}>
+            {signingOut ? 'Signing out…' : 'Sign out'}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

@@ -79,12 +79,11 @@ export default function SkillViewScreen() {
 
         {/* Add skill footer */}
         <View style={s.footer}>
-          <Text style={s.footerText}>Don't see your skill?</Text>
           <TouchableOpacity
             onPress={() => router.push('/skills')}
             activeOpacity={0.7}
           >
-            <Text style={s.footerLink}>Add it here</Text>
+            <Text style={s.footerLink}>Add your skills here!</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -37,21 +37,59 @@ function Divider() {
   return <View style={s.divider} />;
 }
 
+const isValidEmail = (email: string) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+};
+
 export default function LoginScreen() {
   const { login } = useAuth();
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [email,       setEmail]       = useState('');
+  const [password,    setPassword]    = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [emailError,  setEmailError]  = useState('');
+  const [passError,   setPassError]   = useState('');
+
+  const validateFields = () => {
+    let valid = true;
+    setEmailError('');
+    setPassError('');
+
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      valid = false;
+    } else if (!isValidEmail(email)) {
+      setEmailError('Please enter a valid email');
+      valid = false;
+    }
+
+    if (!password.trim()) {
+      setPassError('Password is required');
+      valid = false;
+    } else if (password.length < 6) {
+      setPassError('Password must be at least 6 characters');
+      valid = false;
+    }
+
+    return valid;
+  };
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) return;
+    if (!validateFields()) return;
     setLoading(true);
     try {
       const response = await api.post('/auth/login', { email, password });
       await login(response.data.token, response.data.user);
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/profile');
     } catch (error: any) {
-      Alert.alert('Sign in failed', error?.response?.data?.error || 'Please check your credentials and try again.');
+      const errorMsg = error?.response?.data?.error || 'Please check your credentials and try again.';
+      if (errorMsg.toLowerCase().includes('not found') || errorMsg.toLowerCase().includes('no user')) {
+        setEmailError('No account found with this email');
+      } else if (errorMsg.toLowerCase().includes('password') || errorMsg.toLowerCase().includes('invalid')) {
+        setPassError('Incorrect password');
+      } else {
+        Alert.alert('Sign in failed', errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -78,14 +116,18 @@ export default function LoginScreen() {
               placeholder="you@example.com"
               placeholderTextColor={T.inkGhost}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(val) => {
+                setEmail(val);
+                if (emailError) setEmailError('');
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               returnKeyType="next"
-              style={s.input}
+              style={[s.input, emailError && s.inputError]}
             />
+            {emailError ? <Text style={s.errorText}>{emailError}</Text> : <View style={{ height: 20 }} />}
 
-            <View style={{ height: 20 }} />
+            <View style={{ height: 12 }} />
 
             <Label>Password</Label>
             <TextInput
@@ -93,11 +135,15 @@ export default function LoginScreen() {
               placeholderTextColor={T.inkGhost}
               secureTextEntry
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(val) => {
+                setPassword(val);
+                if (passError) setPassError('');
+              }}
               returnKeyType="done"
               onSubmitEditing={handleLogin}
-              style={s.input}
+              style={[s.input, passError && s.inputError]}
             />
+            {passError ? <Text style={s.errorText}>{passError}</Text> : <View style={{ height: 20 }} />}
 
             <Divider />
 
@@ -192,6 +238,16 @@ const s = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  inputError: {
+    borderBottomColor: '#C0392B',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#C0392B',
+    marginTop: 6,
+    marginBottom: 14,
+    fontWeight: '500',
   },
 
   linkRow: {
