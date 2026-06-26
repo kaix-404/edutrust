@@ -400,6 +400,7 @@ export default function ProfileScreen() {
           <MetricRow label="Endorsements" value={endorsements}   />
           <MetricRow label="Influence"    value={influenceScore} />
           <MetricRow label="Skills"       value={skills.length}  />
+          <MetricRow label="Badges"       value={badges.length}  />
         </View>
 
         <View style={s.card}>
@@ -417,7 +418,7 @@ export default function ProfileScreen() {
 
         <View style={s.card}>
           <Text style={s.sectionTitle}>
-            Achievements
+            Earned Badges
           </Text>
 
           {badges.length > 0 ? (
@@ -446,7 +447,9 @@ export default function ProfileScreen() {
                       marginTop: 4,
                     }}
                   >
-                    Score: {badge.score}
+                    {badge.score >= 90
+                      ? `🌟 Elite Score: ${badge.score}`
+                      : `Score: ${badge.score}`}
                   </Text>
                 </View>
               )
