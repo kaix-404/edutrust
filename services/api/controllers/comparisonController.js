@@ -60,6 +60,23 @@ const getCandidateMetrics = async (session, userName ) => {
         )
       : 0;
 
+  const badgeResult = await session.run(
+    `
+    MATCH (u:User {name:$userName})
+          -[:EARNED]->
+          (b:Badge)
+
+    RETURN
+      collect(DISTINCT b.name) AS badges
+    `,
+    { userName }
+  );
+
+  const badges =
+    badgeResult.records.length > 0
+      ? badgeResult.records[0].get('badges') || []
+      : [];
+
   return {
     name: record.get('name'),
     skills: record.get('skills') || [],
@@ -70,6 +87,7 @@ const getCandidateMetrics = async (session, userName ) => {
     ),
     trustScore,
     influenceScore,
+    badges,
   };
 };
 

@@ -161,6 +161,7 @@ export default function RecruiterScreen() {
   const [candidateName, setCandidateName] = useState('');
 
   const [skills,     setSkills]     = useState<string[]>([]);
+  const [badges,     setBadges]     = useState<any[]>([]);
   const [endorsers,  setEndorsers]  = useState<string[]>([]);
   const [trustScore, setTrustScore] = useState<number | null>(null);
 
@@ -177,17 +178,20 @@ export default function RecruiterScreen() {
     setLoading(true);
     setSearched(true);
     try {
-      const [graphRes, endorseRes] = await Promise.all([
+      const [graphRes, endorseRes, badgeRes] = await Promise.all([
         api.get(`/graph/${encodeURIComponent(userName)}`),
         api.get(`/endorsements/${encodeURIComponent(userName)}`),
+        api.get(`/badges/${encodeURIComponent(userName)}`),
       ]);
       setSkills(graphRes.data.skills || []);
       setEndorsers(endorseRes.data.endorsedBy || []);
       setTrustScore(endorseRes.data.trustScore ?? 0);
+      setBadges(badgeRes.data || [])
     } catch {
       setSkills([]);
       setEndorsers([]);
       setTrustScore(0);
+      setBadges([]);
     } finally {
       setLoading(false);
       setUserName('');
@@ -221,18 +225,36 @@ export default function RecruiterScreen() {
     setSkills([]);
     setEndorsers([]);
     setTrustScore(null);
+    setBadges([]);
     setUserName('');
     setCompareName('');
   };
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
+  const getCount = (value: any) =>
+    typeof value === 'number'
+      ? value
+      : Array.isArray(value)
+      ? value.length
+      : 0;
+
   const overallWinner = (() => {
     if (!comparison) return null;
     const c1 = comparison.candidate1;
     const c2 = comparison.candidate2;
-    const s1 = c1.trustScore + c1.influenceScore + c1.skillCount + c1.endorsements;
-    const s2 = c2.trustScore + c2.influenceScore + c2.skillCount + c2.endorsements;
+    const s1 =
+      getCount(c1.trustScore) +
+      getCount(c1.influenceScore) +
+      getCount(c1.skillCount) +
+      getCount(c1.endorsements) +
+      getCount(c1.badges);
+    const s2 =
+      getCount(c2.trustScore) +
+      getCount(c2.influenceScore) +
+      getCount(c2.skillCount) +
+      getCount(c2.endorsements) +
+      getCount(c2.badges);
     if (s1 === s2) return null;
     return s1 > s2 ? c1.name : c2.name;
   })();
@@ -330,9 +352,10 @@ export default function RecruiterScreen() {
 
               <Divider />
 
-              <MetricRow title="Trust score"   value={trustScore}      />
+              <MetricRow title="Trust score"     value={trustScore} />
               <MetricRow title="Verified skills" value={skills.length} />
-              <MetricRow title="Endorsements"  value={endorsers.length} />
+              <MetricRow title="Earned Badges"   value={badges.length} />
+              <MetricRow title="Endorsements"    value={endorsers.length} />
             </View>
 
             {/* Skills */}
@@ -342,6 +365,24 @@ export default function RecruiterScreen() {
                 <View style={s.pillsRow}>
                   {skills.map((skill, i) => (
                     <SkillTag key={i} name={skill} />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {badges.length > 0 && (
+              <View style={s.card}>
+                <Text style={s.sectionTitle}>Earned Badges</Text>
+                <View style={s.pillsRow}>
+                  {badges.map((badge, i) => (
+                    <SkillTag
+                      key={i}
+                      name={
+                        typeof badge === 'string'
+                          ? badge
+                          : badge?.badge ?? String(badge)
+                      }
+                    />
                   ))}
                 </View>
               </View>
@@ -397,12 +438,19 @@ export default function RecruiterScreen() {
                 c2val={comparison.candidate2.skillCount}
               />
               <CompareMetric
+                label="Badge count"
+                c1name={comparison.candidate1.name}
+                c1val={getCount(comparison.candidate1.badges)}
+                c2name={comparison.candidate2.name}
+                c2val={getCount(comparison.candidate2.badges)}
+              />
+              <CompareMetric
                 label="Endorsements"
                 c1name={comparison.candidate1.name}
                 c1val={comparison.candidate1.endorsements}
                 c2name={comparison.candidate2.name}
                 c2val={comparison.candidate2.endorsements}
-              />
+                />
             </View>
 
             {/* Recommendation */}
