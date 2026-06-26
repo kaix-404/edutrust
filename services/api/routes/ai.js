@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
+const verifyToken = require('../middleware/auth');
+
 const {
-  verifySkill,
+  awardBadge,
+  getBadges,
 } = require('../controllers/aiController');
 
-
-router.post('/verify-skill', verifySkill);
+router.post("/award/start", verifyToken, startSkillInterview);
+router.post("/interview/evaluate", verifyToken, evaluateInterview);
 
 module.exports = router;

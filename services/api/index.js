@@ -13,7 +13,6 @@ const recommendationRoutes = require('./routes/recommendation');
 const roleRoutes = require('./routes/role');
 const analyticsRoutes = require('./routes/analytics');
 const comparisonRoutes = require('./routes/comparison');
-// const aiRoutes = require('./routes/ai');
 const badgeRoutes = require('./routes/badge');
 
 const app = express();
@@ -31,7 +30,6 @@ app.use('/recommendations', recommendationRoutes);
 app.use('/roles', roleRoutes);
 app.use('/analytics', analyticsRoutes);
 app.use('/compare', comparisonRoutes);
-// app.use('/ai',aiRoutes);
 app.use('/badges',badgeRoutes);
 
 app.get('/', (req, res) => {

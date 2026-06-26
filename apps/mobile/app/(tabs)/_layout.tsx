@@ -54,6 +54,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="interview"
+        options={{
+          title:'Interview',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons size={28} name="robot-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="more"
         options={{
           title: 'More',
