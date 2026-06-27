@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   SafeAreaView,
   ScrollView,
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Platform,
   ActivityIndicator,
 } from 'react-native';
 
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 const T = {
@@ -23,6 +22,8 @@ const T = {
   rule:      '#E8E4DF',
   accent:    '#2D5BE3',
   accentDim: '#2D5BE308',
+  green:     '#2E7D52',
+  greenDim:  '#2E7D520C',
 };
 
 const R = 14;
@@ -32,24 +33,31 @@ function Divider() {
 }
 
 export default function SkillRecommendScreen() {
-  const [userName, setUserName]   = useState('');
+  const { user } = useAuth();
   const [recs,     setRecs]       = useState<any[]>([]);
   const [loading,  setLoading]    = useState(false);
   const [searched, setSearched]   = useState(false);
 
-  const load = async () => {
-    if (!userName.trim()) return;
-    setLoading(true);
-    setSearched(true);
-    try {
-      const res = await api.get(`/recommendations/skill/${encodeURIComponent(userName)}`);
-      setRecs(res.data || []);
-    } catch {
-      setRecs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const activeUserName = (user?.name || '').trim();
+
+  useEffect(() => {
+    if (!activeUserName) return;
+
+    const load = async () => {
+      setLoading(true);
+      setSearched(true);
+      try {
+        const res = await api.get(`/recommendations/skill/${encodeURIComponent(activeUserName)}`);
+        setRecs(res.data || []);
+      } catch {
+        setRecs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void load();
+  }, [activeUserName]);
 
   return (
     <SafeAreaView style={s.safe}>
@@ -64,28 +72,12 @@ export default function SkillRecommendScreen() {
           <Text style={s.title}>Skill Recommendations</Text>
         </View>
 
-        {/* Search */}
-        <View style={s.card}>
-          <Text style={s.label}>Username</Text>
-          <TextInput
-            placeholder="e.g. Jordan Lee"
-            placeholderTextColor={T.inkGhost}
-            value={userName}
-            onChangeText={setUserName}
-            autoCapitalize="none"
-            returnKeyType="search"
-            onSubmitEditing={load}
-            style={s.input}
-          />
-          <Divider />
-          <TouchableOpacity
-            onPress={load}
-            activeOpacity={0.85}
-            style={[s.btn, loading && { opacity: 0.6 }]}
-            disabled={loading}
-          >
-            <Text style={s.btnText}>{loading ? 'Finding recommendations…' : 'Get recommendations'}</Text>
-          </TouchableOpacity>
+        <View style={s.sessionCard}>
+          <View style={s.sessionDot} />
+          <View>
+            <Text style={s.sessionLabel}>Recommendations for</Text>
+            <Text style={s.sessionName}>{user?.name ?? '—'}</Text>
+          </View>
         </View>
 
         {loading && (
@@ -142,6 +134,32 @@ const s = StyleSheet.create({
   scroll: { padding: 24, paddingBottom: 60 },
 
   pageHeader: { marginBottom: 28 },
+  sessionCard: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sessionLabel: {
+    fontSize: 12,
+    color: T.inkGhost,
+    fontWeight: '500',
+  },
+  sessionName: {
+    fontSize: 18,
+    color: T.ink,
+    fontWeight: '600',
+  },
+  sessionDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: T.green,
+  },
   eyebrow: {
     fontSize: 12,
     fontWeight: '500',

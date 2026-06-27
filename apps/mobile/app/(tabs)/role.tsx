@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   SafeAreaView,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 const T = {
@@ -76,6 +77,7 @@ function SkillSection({
 }
 
 export default function RoleAnalysisScreen() {
+  const { user } = useAuth();
   const [userName, setUserName] = useState('');
   const [roleName, setRoleName] = useState('');
   const [result,   setResult]   = useState<any>(null);
@@ -84,15 +86,23 @@ export default function RoleAnalysisScreen() {
   const [nextSkill,setNextSkill]= useState('');
   const [loading,  setLoading]  = useState(false);
 
+  useEffect(() => {
+    if (user?.name) {
+      setUserName(user.name);
+    }
+  }, [user?.name]);
+
+  const activeUserName = (userName || user?.name || '').trim();
+
   const analyze = async () => {
-    if (!userName.trim() || !roleName.trim()) return;
+    if (!activeUserName || !roleName.trim()) return;
     setLoading(true);
     setResult(null);
     try {
       const [gapRes, recRes, roadRes] = await Promise.all([
-        api.get(`/roles/gap/${encodeURIComponent(roleName)}/${encodeURIComponent(userName)}`),
-        api.get(`/roles/recommendations/${encodeURIComponent(roleName)}/${encodeURIComponent(userName)}`),
-        api.get(`/roles/roadmap/${encodeURIComponent(roleName)}/${encodeURIComponent(userName)}`),
+        api.get(`/roles/gap/${encodeURIComponent(roleName)}/${encodeURIComponent(activeUserName)}`),
+        api.get(`/roles/recommendations/${encodeURIComponent(roleName)}/${encodeURIComponent(activeUserName)}`),
+        api.get(`/roles/roadmap/${encodeURIComponent(roleName)}/${encodeURIComponent(activeUserName)}`),
       ]);
       setResult(gapRes.data);
       setRecs(recRes.data.recommendations || []);
@@ -123,21 +133,16 @@ export default function RoleAnalysisScreen() {
           <Text style={s.title}>Role Analysis</Text>
         </View>
 
+        <View style={s.sessionCard}>
+          <View style={s.sessionDot} />
+          <View>
+            <Text style={s.sessionLabel}>Analyzing for</Text>
+            <Text style={s.sessionName}>{user?.name ?? '—'}</Text>
+          </View>
+        </View>
+
         {/* Form */}
         <View style={s.card}>
-          <Text style={s.label}>Candidate name</Text>
-          <TextInput
-            placeholder="e.g. Jordan Lee"
-            placeholderTextColor={T.inkGhost}
-            value={userName}
-            onChangeText={setUserName}
-            autoCapitalize="words"
-            returnKeyType="next"
-            style={s.input}
-          />
-
-          <View style={{ height: 20 }} />
-
           <Text style={s.label}>Target role</Text>
           <TextInput
             placeholder="e.g. Frontend Engineer"
@@ -148,6 +153,8 @@ export default function RoleAnalysisScreen() {
             onSubmitEditing={analyze}
             style={s.input}
           />
+
+          <View style={{ height: 20 }} />
 
           <Divider />
 
@@ -255,6 +262,32 @@ const s = StyleSheet.create({
   scroll: { padding: 24, paddingBottom: 60 },
 
   pageHeader: { marginBottom: 28 },
+  sessionCard: {
+    backgroundColor: T.paper,
+    borderRadius: R + 4,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sessionLabel: {
+    fontSize: 12,
+    color: T.inkGhost,
+    fontWeight: '500',
+  },
+  sessionName: {
+    fontSize: 15,
+    color: T.ink,
+    fontWeight: '600',
+  },
+  sessionDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: T.green,
+  },
   eyebrow: {
     fontSize: 12,
     fontWeight: '500',
