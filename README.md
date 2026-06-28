@@ -1,58 +1,158 @@
-# EduTrust AI
+# EduTrust
 
-EduTrust AI is a graph-powered career intelligence platform built using **Neo4j**, **Node.js**, **Express**, **React Native (Expo)**, and **JWT Authentication**.
+**AI-Powered Skill Verification & Trust Network**
 
-The platform helps students, professionals, recruiters, and organizations understand skills, trust, endorsements, role fit, and career progression using connected graph data.
+EduTrust is a graph-based credential verification platform that helps learners, recruiters, and institutions establish trust in skills and achievements.
+
+Instead of relying solely on self-reported resumes, EduTrust combines:
+
+* Knowledge Graphs (Neo4j)
+* Peer Endorsements
+* Trust & Influence Analytics
+* AI-Powered Skill Interviews
+* Verified Skill Badges
+
+to create a verifiable skill ecosystem.
 
 ---
 
-## Features
+## Problem
+
+Traditional resumes rely heavily on self-declared skills.
+
+Recruiters often struggle to determine:
+
+* Whether a candidate truly possesses a skill
+* How trustworthy endorsements are
+* What skills are missing for a target role
+* How candidates compare against each other
+
+This creates a trust gap between learners and employers.
+
+---
+
+## Solution
+
+EduTrust creates a graph-based trust network where:
+
+* Users build verified skill profiles
+* Peers endorse skills
+* Neo4j calculates trust relationships
+* AI conducts technical interviews
+* Verified badges are awarded automatically
+* Recruiters gain deeper insight into candidate credibility
+
+---
+
+## Key Features
 
 ### Authentication
 
-* User Registration
-* User Login
-* JWT-based Authentication
-* Protected API Routes
-* Persistent Login using AsyncStorage
+* JWT-based authentication
+* Secure login and registration
+* Protected API routes
+* Persistent sessions using AsyncStorage
 
-### Skill Graph Management
+### Knowledge Graph
 
-* Create Users
-* Create Skills
-* Connect Users with Skills
-* Visualize User Skill Networks
+Powered by Neo4j.
 
-### Career Intelligence
+Relationships include:
 
-* Role Recommendation Engine
-* Skill Gap Analysis
-* Personalized Learning Roadmaps
-* Career Path Discovery
-* Skill Recommendations
+* User → Skill
+* User → User endorsements
+* User → Badge
+* Role → Skill
 
-### Trust & Endorsements
+This enables advanced graph analytics and recommendations.
 
-* Endorse Users
-* Trust Score Calculation
-* Endorsement Network Visualization
-* Influence Score Ranking
-* Community-Based Credibility Metrics
+### Skill Management
+
+Users can:
+
+* Create profiles
+* Add skills
+* View verified skills
+* Build professional knowledge graphs
+
+### Endorsements
+
+Users can endorse one another.
+
+Each endorsement contributes to:
+
+* Trust Score
+* Influence Score
+* Network Reputation
 
 ### Recruiter Dashboard
 
-* Candidate Skill Analysis
-* Trust & Endorsement Evaluation
-* Influence Measurement
-* Candidate Comparison
-* Recruiter-Friendly Profile Insights
+Recruiters can:
 
-### Analytics
+* Analyze candidates
+* View skills
+* Review endorsements
+* Check trust metrics
+* View verified badges
+* Compare candidates
 
-* Platform Statistics
-* User Rankings
-* Role Rankings
-* Network Insights
+### Candidate Comparison
+
+Side-by-side comparison based on:
+
+* Skills
+* Endorsements
+* Trust Score
+* Influence Score
+
+### Career Pathing
+
+Uses graph traversal to:
+
+* Suggest learning paths
+* Identify missing skills
+* Recommend career transitions
+
+### Skill Gap Analysis
+
+Compare:
+
+Target Role ↔ Current User Skills
+
+and identify missing competencies.
+
+### Role Recommendations
+
+Recommend roles based on:
+
+* Existing skills
+* Skill overlap
+* Knowledge graph relationships
+
+### AI Skill Interviews
+
+Powered by Puter AI.
+
+Workflow:
+
+1. User selects a skill
+2. AI generates technical questions
+3. User submits answers
+4. AI evaluates responses
+5. Score is generated
+6. Badge is awarded automatically
+
+### Verified Badges
+
+Badges are awarded after successful AI verification.
+
+Example:
+
+* Node.js Verified
+* React Verified
+* Python Verified
+
+Badges are stored in Neo4j and visible to recruiters.
 
 ---
 
@@ -63,104 +163,89 @@ The platform helps students, professionals, recruiters, and organizations unders
 * React Native
 * Expo Router
 * TypeScript
-* Axios
 * AsyncStorage
-* React Native SVG
 
 ### Backend
 
 * Node.js
 * Express.js
-* Neo4j Graph Database
 * JWT Authentication
-* bcrypt.js
+
+### Database
+
+* Neo4j Graph Database
+
+### AI
+
+* Puter AI
 
 ---
 
-## Graph Model
+## Architecture
 
-### Nodes
-
-* User
-* Skill
-* Role
-
-### Relationships
-
-* HAS_SKILL
-* RELATED_TO
-* REQUIRES
-* ENDORSES
-
----
-
-## Trust Algorithm
-
-Trust Score is calculated using endorsements:
-
-Trust Score = Number of Endorsements × 10
-
-Influence Score is calculated using the trust scores of endorsers:
-
-Influence Score = Sum of Endorser Trust Scores
-
-This enables trust propagation through the professional network.
+React Native (Expo)
+↓
+Express API
+↓
+JWT Authentication
+↓
+Neo4j Graph Database
+↓
+Graph Analytics
+↓
+Puter AI Evaluation
 
 ---
 
-## Recruiter Metrics
+## AI Verification Flow
 
-Each candidate profile includes:
+User Selects Skill
+↓
+AI Generates Interview
+↓
+Candidate Answers
+↓
+AI Evaluates Responses
+↓
+Score Generated
+↓
+Verified Badge Awarded
+↓
+Stored in Neo4j
 
-* Verified Skills
-* Skill Count
-* Endorsement Count
-* Trust Score
-* Influence Score
+---
 
-These metrics help recruiters evaluate both technical capability and community credibility.
+## Recruiter Workflow
+
+Recruiter
+↓
+Candidate Search
+↓
+Trust Analysis
+↓
+Influence Analysis
+↓
+Skill Verification
+↓
+Badge Validation
+↓
+Hiring Decision
 
 ---
 
 ## Future Enhancements
 
-* AI-Powered Career Counsellor
-* Resume Parsing
-* Job Matching Engine
-* Learning Resource Recommendations
-* Graph-Based Fraud Detection
-* Real-Time Notifications
-* Organization Dashboards
+* Self-Sovereign Identity (SSI)
+* Zero-Knowledge Proof Verification
+* Verified Job Marketplace
+* AI Career Coach
+* Institutional Credential Issuance
+* QR-Based Credential Sharing
 
 ---
 
-## Running the Project
+## Authors
 
-### Backend
+Built by Kai for hackathon submission (HACKHAZARDS'26).
 
-```bash
-npm install
-npm run dev
-```
-
-### Frontend
-
-```bash
-npm install
-npx expo start
-```
-
-### Environment Variables
-
-```env
-JWT_SECRET=your_secret_key
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your_password
-```
-
----
-
-## Team
-
-Built as a hackathon project to demonstrate how graph databases can power trust-aware career intelligence and recruiter decision-making systems.
+EduTrust aims to bridge the trust gap between education and employment through graph intelligence and AI-powered verification.
