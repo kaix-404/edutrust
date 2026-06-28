@@ -16,6 +16,8 @@ import { router } from 'expo-router';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+
 const T = {
   canvas:    '#F7F5F2',
   paper:     '#FFFFFF',
@@ -27,9 +29,15 @@ const T = {
   accentDim: '#2D5BE308',
   danger:    '#C0392B',
   dangerDim: '#C0392B08',
+  gold:      '#B07D2E',
+  goldDim:   '#B07D2E0C',
+  green:     '#2E7D52',
+  greenDim:  '#2E7D520C',
 };
 
 const R = 14;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: T.canvas },
@@ -60,6 +68,7 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
 
+  // Identity
   identityRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -81,16 +90,8 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: T.accent,
   },
-  name: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: T.ink,
-    marginBottom: 3,
-  },
-  email: {
-    fontSize: 13,
-    color: T.inkGhost,
-  },
+  name:  { fontSize: 20, fontWeight: '700', color: T.ink, marginBottom: 3 },
+  email: { fontSize: 13, color: T.inkGhost },
 
   divider: {
     height: 1,
@@ -98,6 +99,7 @@ const s = StyleSheet.create({
     marginVertical: 18,
   },
 
+  // Metric rows
   metricRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -118,6 +120,7 @@ const s = StyleSheet.create({
     marginBottom: 16,
   },
 
+  // Skills
   pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   skillTag: {
     paddingHorizontal: 13,
@@ -131,6 +134,33 @@ const s = StyleSheet.create({
 
   empty: { fontSize: 14, color: T.inkGhost },
 
+  // Badge rows
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: T.rule,
+  },
+  badgeIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeIcon: { fontSize: 18 },
+  badgeInfo: { flex: 1 },
+  badgeName: { fontSize: 15, fontWeight: '600', color: T.ink, marginBottom: 2 },
+  badgeTier: { fontSize: 12, fontWeight: '500' },
+  badgeScore: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+
+  // Sign out
   signOutBtn: {
     marginTop: 8,
     backgroundColor: T.dangerDim,
@@ -141,13 +171,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   signOutBtnDisabled: { opacity: 0.5 },
-  signOutText: {
-    color: T.danger,
-    fontWeight: '600',
-    fontSize: 15,
-  },
+  signOutText: { color: T.danger, fontWeight: '600', fontSize: 15 },
 
-  // ── Confirm modal ──────────────────────────────────────────────────────────
+  // Modal
   modalBackdrop: {
     flex: 1,
     backgroundColor: '#1A171488',
@@ -175,15 +201,8 @@ const s = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 28,
   },
-  modalRule: {
-    height: 1,
-    backgroundColor: T.rule,
-    marginBottom: 20,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  modalRule:    { height: 1, backgroundColor: T.rule, marginBottom: 20 },
+  modalActions: { flexDirection: 'row', gap: 10 },
   modalCancel: {
     flex: 1,
     paddingVertical: 13,
@@ -192,11 +211,7 @@ const s = StyleSheet.create({
     borderColor: T.rule,
     alignItems: 'center',
   },
-  modalCancelText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: T.inkSub,
-  },
+  modalCancelText: { fontSize: 15, fontWeight: '500', color: T.inkSub },
   modalConfirm: {
     flex: 1,
     paddingVertical: 13,
@@ -204,14 +219,24 @@ const s = StyleSheet.create({
     backgroundColor: T.danger,
     alignItems: 'center',
   },
-  modalConfirmText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-  },
+  modalConfirmText: { fontSize: 15, fontWeight: '600', color: '#fff' },
 });
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ─── Badge helpers ────────────────────────────────────────────────────────────
+
+function badgeTier(score: number): {
+  label: string;
+  color: string;
+  bg: string;
+  icon: string;
+} {
+  if (score >= 90) return { label: 'Elite',     color: T.gold,   bg: T.goldDim,  icon: '🏅' };
+  if (score >= 80) return { label: 'Verified',  color: T.green,  bg: T.greenDim, icon: '✓' };
+  if (score >= 60) return { label: 'Proficient',color: T.accent, bg: T.accentDim,icon: '◆' };
+  return               { label: 'Beginner',  color: T.inkSub, bg: T.canvas,   icon: '○' };
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Divider() {
   return <View style={s.divider} />;
@@ -234,6 +259,22 @@ function SkillTag({ name }: { name: string }) {
   );
 }
 
+function BadgeRow({ badge }: { badge: { badge: string; score: number } }) {
+  const tier = badgeTier(badge.score);
+  return (
+    <View style={s.badgeRow}>
+      <View style={[s.badgeIconWrap, { backgroundColor: tier.bg }]}>
+        <Text style={s.badgeIcon}>{tier.icon}</Text>
+      </View>
+      <View style={s.badgeInfo}>
+        <Text style={s.badgeName}>{badge.badge}</Text>
+        <Text style={[s.badgeTier, { color: tier.color }]}>{tier.label}</Text>
+      </View>
+      <Text style={[s.badgeScore, { color: tier.color }]}>{badge.score}</Text>
+    </View>
+  );
+}
+
 function SignOutModal({
   visible,
   onCancel,
@@ -244,12 +285,7 @@ function SignOutModal({
   onConfirm: () => void;
 }) {
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={s.modalBackdrop} onPress={onCancel}>
         <Pressable style={s.modalBox} onPress={e => e.stopPropagation()}>
           <Text style={s.modalTitle}>Sign out</Text>
@@ -258,18 +294,10 @@ function SignOutModal({
           </Text>
           <View style={s.modalRule} />
           <View style={s.modalActions}>
-            <TouchableOpacity
-              onPress={onCancel}
-              activeOpacity={0.7}
-              style={s.modalCancel}
-            >
+            <TouchableOpacity onPress={onCancel} activeOpacity={0.7} style={s.modalCancel}>
               <Text style={s.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onConfirm}
-              activeOpacity={0.85}
-              style={s.modalConfirm}
-            >
+            <TouchableOpacity onPress={onConfirm} activeOpacity={0.85} style={s.modalConfirm}>
               <Text style={s.modalConfirmText}>Sign out</Text>
             </TouchableOpacity>
           </View>
@@ -279,7 +307,7 @@ function SignOutModal({
   );
 }
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
   const { user, logout, loading: authLoading } = useAuth();
@@ -296,6 +324,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (authLoading) return;
     if (user?.name) load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading]);
 
   const load = async () => {
@@ -309,14 +338,11 @@ export default function ProfileScreen() {
         api.get(`/badges/${encodeURIComponent(user.name)}`),
       ]);
 
-      // Normalize skills response: API returns an array of { skill } objects
       const skillsPayload = skillsRes.data;
-      let skillsList: string[] = [];
-      if (Array.isArray(skillsPayload)) {
-        skillsList = skillsPayload.map((s: any) => s.skill || s.name || String(s));
-      } else {
-        skillsList = skillsPayload?.skills || [];
-      }
+      const skillsList: string[] = Array.isArray(skillsPayload)
+        ? skillsPayload.map((s: any) => s.skill || s.name || String(s))
+        : skillsPayload?.skills || [];
+
       setSkills(skillsList);
       setTrustScore(endorseRes.data.trustScore || 0);
       setEndorsements(endorseRes.data.endorsements || 0);
@@ -378,11 +404,13 @@ export default function ProfileScreen() {
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
         <View style={s.pageHeader}>
           <Text style={s.eyebrow}>Account</Text>
           <Text style={s.title}>My Profile</Text>
         </View>
 
+        {/* Identity + metrics */}
         <View style={s.card}>
           <View style={s.identityRow}>
             <View style={s.avatar}>
@@ -403,6 +431,7 @@ export default function ProfileScreen() {
           <MetricRow label="Badges"       value={badges.length}  />
         </View>
 
+        {/* Skills */}
         <View style={s.card}>
           <Text style={s.sectionTitle}>Verified skills</Text>
           {skills.length > 0 ? (
@@ -416,51 +445,21 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Badges */}
         <View style={s.card}>
-          <Text style={s.sectionTitle}>
-            Earned Badges
-          </Text>
-
+          <Text style={s.sectionTitle}>Earned badges</Text>
           {badges.length > 0 ? (
-            badges.map(
-              (badge, index) => (
-                <View
-                  key={index}
-                  style={{
-                    paddingVertical: 10,
-                    borderBottomWidth: 1,
-                    borderBottomColor:
-                      '#E8E4DF',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 16,
-                    }}
-                  >
-                    🏅 {badge.badge}
-                  </Text>
-
-                  <Text
-                    style={{
-                      color: '#666',
-                      marginTop: 4,
-                    }}
-                  >
-                    {badge.score >= 90
-                      ? `🌟 Elite Score: ${badge.score}`
-                      : `Score: ${badge.score}`}
-                  </Text>
-                </View>
-              )
-            )
+            badges.map((badge, i) => (
+              <BadgeRow key={i} badge={badge} />
+            ))
           ) : (
             <Text style={s.empty}>
-              No badges earned yet.
+              Complete an AI interview with a score of 80+ to earn badges.
             </Text>
           )}
         </View>
 
+        {/* Sign out */}
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
           activeOpacity={0.85}
